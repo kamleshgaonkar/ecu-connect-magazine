@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 export async function POST(request: Request) {
   let browser;
+  let executablePath: string | undefined;
   try {
     const raw = await request.text();
     if (Buffer.byteLength(raw) > 1_000_000)
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const executablePath =
+    executablePath =
       process.env.CHROMIUM_EXECUTABLE_PATH ||
       (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined);
     browser = await chromium.launch({ headless: true, executablePath });
@@ -76,10 +77,15 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error(
-      "PDF export failed:",
-      error instanceof Error ? error.message : "Unknown error",
-    );
+    console.error("PDF export failed:", {
+      error: error instanceof Error ? error.stack || error.message : error,
+      browserLaunched: Boolean(browser),
+      executablePath: executablePath ?? "(Playwright default)",
+      playwrightBrowsersPath:
+        process.env.PLAYWRIGHT_BROWSERS_PATH ?? "(unset)",
+      platform: `${process.platform}-${process.arch}`,
+      node: process.version,
+    });
     return NextResponse.json(
       {
         error:

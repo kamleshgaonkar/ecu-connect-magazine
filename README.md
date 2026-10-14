@@ -13,6 +13,12 @@ PLAYWRIGHT_BROWSERS_PATH="$PWD/.cache/ms-playwright" npx playwright install chro
 npm run dev
 ```
 
+On Windows (PowerShell), install Chromium into the same repository cache with:
+
+```powershell
+$env:PLAYWRIGHT_BROWSERS_PATH = "$PWD\.cache\ms-playwright"; npx playwright install chromium
+```
+
 Chromium also needs Linux system libraries. If missing, use Playwright's supported `install-deps chromium` command with system package installation permissions. The PDF endpoint and browser tests use `/usr/bin/chromium` when available, or `CHROMIUM_EXECUTABLE_PATH` when supplied. Otherwise the Next configuration and Playwright test configuration use the repository's `.cache/ms-playwright` by default; set `PLAYWRIGHT_BROWSERS_PATH` to override. npm's cloud cache is configured at `/workspace/.cache/npm`; outside the cloud use `npm ci --cache /your/writable/cache`.
 
 ```sh
