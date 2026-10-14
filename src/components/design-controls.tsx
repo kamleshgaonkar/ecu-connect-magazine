@@ -48,8 +48,8 @@ export function IssueDesignControls({
           }
         />
         <div className="text-xs leading-relaxed text-[#657565]">
-          A4 portrait · Printed folio 1 starts on PDF page 3. Cover and contents
-          have no printed folio.
+          A4 portrait · Printed folio 1 starts after contents (PDF page 3 with
+          one contents page). Cover and contents have no printed folio.
         </div>
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">

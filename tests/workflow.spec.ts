@@ -158,70 +158,117 @@ test("dashboard and editor are usable on a narrow viewport", async ({
     ),
   ).toBe(true);
 });
-test("multi-page contents stay accurate and rich text survives page breaks", async ({
-  page,
-}) => {
-  const issue = structuredClone(sampleIssue);
-  issue.sections = issue.sections.slice(0, 1);
-  const strongText = "A carefully considered editorial detail. ".repeat(350);
-  issue.sections[0].stories = Array.from({ length: 25 }, (_, i) => ({
-    ...newStory(),
-    id: `test-story-${i}`,
-    title: `Editorial dispatch ${i + 1}`,
-    subtitle: "",
-    byline: "",
-    blocks: [
-      {
-        id: `test-block-${i}`,
-        type: "paragraph" as const,
-        text:
-          i === 0
-            ? `**${strongText}** *Editorial emphasis* <script>not executable</script>`
-            : "An illustrated local sample.",
-      },
-    ],
-  }));
-  await page.setContent(magazineDocument(issue));
-  await page.waitForFunction(() =>
-    Boolean(
-      (window as unknown as { __magazineReady: boolean }).__magazineReady,
-    ),
-  );
-  expect(
-    await page
-      .locator(".page-body .text-block strong")
-      .allTextContents()
-      .then((t) => t.join("")),
-  ).toBe(strongText);
-  await expect(page.locator(".text-block em")).toHaveText("Editorial emphasis");
-  await expect(
-    page.getByRole("heading", { name: "Contents · continued" }).first(),
-  ).toBeVisible();
-  await expect(page.locator(".page").nth(2)).toHaveAttribute("data-folio", "1");
-  await expect(page.locator(".page").last()).toHaveAttribute(
-    "data-kind",
-    "contents",
-  );
-  for (const index of [0, 24]) {
-    const actual = await page
-      .locator(".page")
-      .filter({
-        has: page.getByRole("heading", {
-          name: `Editorial dispatch ${index + 1}`,
-          exact: true,
-        }),
-      })
-      .locator(".page-number")
-      .textContent();
-    expect(await page.locator(".toc-number").nth(index).textContent()).toBe(
-      actual?.padStart(2, "0"),
+for (const storyCount of [2, 25]) {
+  test(`${storyCount === 2 ? "single-page" : "multi-page"} contents precede articles with accurate folios and preserved rich text`, async ({
+    page,
+    request,
+  }) => {
+    const issue = structuredClone(sampleIssue);
+    issue.sections = issue.sections.slice(0, 1);
+    const strongText = "A carefully considered editorial detail. ".repeat(350);
+    issue.sections[0].stories = Array.from({ length: storyCount }, (_, i) => ({
+      ...newStory(),
+      id: `test-story-${i}`,
+      title: `Editorial dispatch ${i + 1}`,
+      subtitle: "",
+      byline: "",
+      blocks: [
+        {
+          id: `test-block-${i}`,
+          type: "paragraph" as const,
+          text:
+            i === 0
+              ? `**${strongText}** *Editorial emphasis* <script>not executable</script>`
+              : "An illustrated local sample.",
+        },
+      ],
+    }));
+    await page.setContent(magazineDocument(issue));
+    await page.waitForFunction(() =>
+      Boolean(
+        (window as unknown as { __magazineReady: boolean }).__magazineReady,
+      ),
     );
-  }
-  expect(
-    await page.evaluate(
+    expect(
+      await page
+        .locator(".page-body .text-block strong")
+        .allTextContents()
+        .then((t) => t.join("")),
+    ).toBe(strongText);
+    await expect(page.locator(".text-block em")).toHaveText(
+      "Editorial emphasis",
+    );
+    const contentsCount = await page
+      .locator('.page[data-kind="contents"]')
+      .count();
+    if (storyCount === 2) expect(contentsCount).toBe(1);
+    else expect(contentsCount).toBeGreaterThan(1);
+    const frontMatterPages = contentsCount + 1;
+    const pages = await page.locator(".page").evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        kind: node.getAttribute("data-kind"),
+        physical: Number(node.getAttribute("data-physical-page")),
+        folio: node.getAttribute("data-folio"),
+        visibleFolio: node.querySelector(".page-number")?.textContent ?? "",
+      })),
+    );
+    expect(pages.slice(0, frontMatterPages).map((p) => p.kind)).toEqual([
+      "cover",
+      ...Array(contentsCount).fill("contents"),
+    ]);
+    pages.forEach((p, index) => {
+      expect(p.physical).toBe(index + 1);
+      if (index < frontMatterPages) {
+        expect(p.folio).toBeNull();
+        expect(p.visibleFolio).toBe("");
+      } else {
+        expect(p.kind).toBe("article");
+        expect(p.folio).toBe(String(index + 1 - frontMatterPages));
+        expect(p.visibleFolio).toBe(p.folio);
+      }
+    });
+    expect(pages.length - frontMatterPages).toBeGreaterThan(storyCount);
+    const storyPages = await page.evaluate(
       () =>
-        (window as unknown as { __magazineResult: { warnings: string[] } })
-          .__magazineResult.warnings,
-    ),
-  ).toEqual([]);
-});
+        (
+          window as unknown as {
+            __magazineResult: {
+              storyPages: Record<
+                string,
+                { physicalPage: number; folio: number }
+              >;
+            };
+          }
+        ).__magazineResult.storyPages,
+    );
+    for (let index = 0; index < storyCount; index++) {
+      const actual = await page
+        .locator(".page")
+        .filter({
+          has: page.getByRole("heading", {
+            name: `Editorial dispatch ${index + 1}`,
+            exact: true,
+          }),
+        })
+        .locator(".page-number")
+        .textContent();
+      const entry = storyPages[`test-story-${index}`];
+      expect(entry.folio).toBe(entry.physicalPage - frontMatterPages);
+      expect(pages[entry.physicalPage - 1].folio).toBe(String(entry.folio));
+      expect(actual).toBe(String(entry.folio));
+      expect(await page.locator(".toc-number").nth(index).textContent()).toBe(
+        actual?.padStart(2, "0"),
+      );
+    }
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { __magazineResult: { warnings: string[] } })
+            .__magazineResult.warnings,
+      ),
+    ).toEqual([]);
+    const exported = await request.post("/api/export", { data: issue });
+    expect(exported.status()).toBe(200);
+    expect((await exported.body()).subarray(0, 4).toString()).toBe("%PDF");
+  });
+}

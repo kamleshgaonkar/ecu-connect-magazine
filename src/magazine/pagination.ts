@@ -206,13 +206,12 @@ export async function renderMagazine(
     ({ page, body } = make("contents"));
     const firstContents = page;
     body.append(el("h2", "toc-title", "In this issue"));
-    // Reserve exactly two front-matter pages. Contents overflow stays visible and
-    // continues after the body, keeping folio 1 on physical PDF page 3 in every issue.
+    // Measure all contents pages before assigning article folios.
     body.append(
       el(
         "p",
         "toc-note",
-        "Page references are printed folios. Additional contents pages, if needed, follow the articles.",
+        "Page references are printed article folios. Numbering starts after the contents.",
       ),
     );
     if (!stories.length)
@@ -223,7 +222,6 @@ export async function renderMagazine(
           "No stories yet. Add a section and story to begin.",
         ),
       );
-    const extraContents: HTMLElement[] = [];
     for (const { sectionName, story } of stories) {
       const row = el("div", "toc-row");
       const label = el("div");
@@ -234,7 +232,6 @@ export async function renderMagazine(
       if (!fits()) {
         row.remove();
         ({ page, body } = make("contents"));
-        extraContents.push(page);
         body.append(el("h2", "toc-title", "Contents · continued"));
         body.append(row);
         if (!fits())
@@ -242,17 +239,13 @@ export async function renderMagazine(
       }
       entries.push({ id: story.id, number });
     }
-    for (const p of extraContents) p.remove();
-    if (extraContents.length)
-      notices.push(
-        "Contents continuation pages follow the articles so printed folio 1 remains on physical PDF page 3.",
-      );
+    const frontMatterPages = root.children.length;
     firstContents.dataset.contents = "primary";
     for (const item of stories) {
       context = item;
       fresh();
       const physicalPage = root.children.length;
-      const folio = folioForPage(physicalPage, "article")!;
+      const folio = folioForPage(physicalPage, "article", frontMatterPages)!;
       storyPages[item.story.id] = { physicalPage, folio };
       add(el("h2", "story-title", item.story.title));
       if (item.story.subtitle) add(el("p", "subtitle", item.story.subtitle));
@@ -283,15 +276,10 @@ export async function renderMagazine(
         folio,
       ).padStart(2, "0");
     }
-    for (const p of extraContents) {
-      if (root.children.length >= maxPages)
-        throw new Error(`Page limit of ${maxPages} reached.`);
-      root.append(p);
-    }
     [...root.children].forEach((p, i) => {
       const kind = p.getAttribute("data-kind") as
         "cover" | "contents" | "article";
-      const folio = folioForPage(i + 1, kind);
+      const folio = folioForPage(i + 1, kind, frontMatterPages);
       p.setAttribute("data-physical-page", String(i + 1));
       if (folio !== null) p.setAttribute("data-folio", String(folio));
       const n = p.querySelector(".page-number");

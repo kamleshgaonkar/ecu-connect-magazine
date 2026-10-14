@@ -8,7 +8,7 @@ Implemented against the approved [design system](design-system.md) and [template
 - Reusable typed DOM page-master components, serialized into one self-contained measured document used identically by the preview iframe and Playwright/Chromium export. The existing cover/contents are foundation compositions; article and inset-paper masters are reusable starting points. This is not implementation of all 17 original template families.
 - A validated template registry retaining `feature`, `dispatch`, `bulletin`, with `editorial` and `paper` foundations. Each story can inherit/override its section's editorial template, opening page master and continuation master independently.
 - Seven visual theme presets. Issue defaults flow to sections and then stories, with explicit overrides at each level. Paper panels keep readable dark text and blue accents within the selected outer-page theme.
-- Configurable section header, issue/date footer, printed folio and top-yellow-accent visibility. Cover and primary contents occupy physical pages 1–2 without printed folios; the first article is physical page 3 / printed folio 1. Printed footers use `1`, `2`, etc.; contents references use `01`, `02`, etc. Calculated references remain available even if visible footer folios are hidden.
+- Configurable section header, issue/date footer, printed folio and top-yellow-accent visibility. Cover and all contents pages precede articles without printed folios; the first article is printed folio 1 (physical page 3 with one contents page). Printed footers use `1`, `2`, etc.; contents references use `01`, `02`, etc. Calculated references remain available even if visible footer folios are hidden.
 - Section reordering/optional visibility retained. Stories can now be excluded individually without deleting their content. Existing text/block editing, add/remove/reorder, explicit save/reload, sample labeling, search/dashboard and PDF download remain supported.
 - `schemaVersion: 2` and non-destructive legacy migration under the existing `ecu-connect:issues:v1` storage key. Unversioned/v1 records load with defaults; reads do not rewrite existing storage. Explicit saves write validated v2 records. Legacy IDs, copy, order, templates, dates and sample status are preserved. Unsupported future versions and unknown fields are rejected rather than silently discarded.
 - A separate typed `MediaAssetRepository` contract, validated raster metadata and media references with alt/caption/credit/focal point. Its session-only memory adapter stores defensive copies of binary data separately from issue JSON. No external storage or Supabase is introduced.
@@ -18,11 +18,13 @@ The workspace/dashboard design remains unchanged. Editor changes are compact app
 
 ## Front matter and contents overflow
 
-The approved decision requires folio 1 specifically on **physical PDF page 3**. A contents page that grows beyond physical page 2 would otherwise shift that first article. Phase 3A therefore keeps its primary contents on page 2 and places any additional contents pages **after the articles**, without printed folios. Contents is still measured, continued and fully visible; its references point to the actual body folios. The document and preview explicitly explain this placement.
+The post-Phase-3A pagination correction keeps **all contents pages together immediately after the cover**. Printed article folio 1 starts after the final measured contents page. With a single contents page it remains on physical PDF page 3; with multiple contents pages it moves to the next physical page. Contents references use actual story-start folios, including article continuation pages.
 
-This continuation arrangement is a foundation policy, not an observed original design: all four references have one contents page. A different arrangement would require changing the fixed-physical-page-3 decision. No text is clipped or reduced to fit a single contents page.
+This supersedes the initial Phase 3A trailing-contents policy. No text is clipped or reduced to fit a single contents page. Cover and contents remain unnumbered even when article furniture is enabled.
 
 ## Validation performed
+
+Pagination correction validation: typecheck, lint and production build passed; all **23 unit tests** and **11 browser tests** passed. Added coverage verifies contiguous single/multiple contents pages, unnumbered front matter, consecutive article folios including continuations, every TOC reference and real PDF export in both cases. The table below records the original Phase 3A validation.
 
 | Check                          | Result                                                                                                                                 |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -90,7 +92,7 @@ This list is relative to baseline commit `d9d5814`, which preserved the pre-exis
 
 Dedicated branch: **`phase3a/foundations`**, based on the existing GitHub main history. The initial baseline commit `d9d5814` commits 33 previously uncommitted builder/analysis files without modifying their existing contents. The Phase 3A implementation is a separate commit on top of that baseline. The approved design documents are therefore committed locally and preserved; the original GitHub PDF references remain in the inherited history.
 
-No force-push, history replacement, deployment or Supabase connection was performed. This branch has not been pushed to GitHub. It is prepared locally for review; publishing a branch/PR is a separate action.
+No force-push, history replacement, deployment or Supabase connection was performed. The branch has been published to GitHub with a normal push, including both baseline `d9d5814` and foundation `a702b8a` commits. The pagination correction is committed on the same branch; `main` is unchanged.
 
 ## Remaining limitations
 

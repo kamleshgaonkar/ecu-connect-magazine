@@ -172,6 +172,29 @@ describe("A4 and printed folios", () => {
     expect(() => printedFolio(2, "article")).toThrow();
   });
 });
+describe("variable contents front matter", () => {
+  it("starts article numbering after every contents page", () => {
+    for (const contentsPages of [1, 2, 4]) {
+      const frontMatterPages = 1 + contentsPages;
+      expect(printedFolio(1, "cover", frontMatterPages)).toBeNull();
+      for (let physical = 2; physical <= frontMatterPages; physical++)
+        expect(printedFolio(physical, "contents", frontMatterPages)).toBeNull();
+      expect(
+        printedFolio(frontMatterPages + 1, "article", frontMatterPages),
+      ).toBe(1);
+      expect(
+        printedFolio(frontMatterPages + 8, "article", frontMatterPages),
+      ).toBe(8);
+      expect(() =>
+        printedFolio(frontMatterPages, "article", frontMatterPages),
+      ).toThrow();
+    }
+  });
+  it("rejects invalid front matter counts", () => {
+    for (const count of [0, 1, 2.5, NaN])
+      expect(() => printedFolio(3, "article", count)).toThrow();
+  });
+});
 describe("local media asset boundary", () => {
   it("stores and returns independent binary data without embedding it in issue JSON", async () => {
     const repo = new MemoryMediaAssetRepository();
