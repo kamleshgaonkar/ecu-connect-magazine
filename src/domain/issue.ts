@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { templateIds, pageMasterIds, themeIds } from "./design";
+import { mediaReferenceSchema } from "./media";
 
 export const sectionNames = [
   "Cover Story",
@@ -9,14 +11,27 @@ export const sectionNames = [
   "The ECU Worldwide Way",
   "Holidays Around the World",
 ] as const;
-export const templates = ["feature", "dispatch", "bulletin"] as const;
-const blockSchema = z.object({
-  id: z.string().min(1).max(100),
-  type: z.enum(["paragraph", "heading", "quote", "list"]),
-  text: z.string().max(20000),
-});
+export const templates = templateIds;
+const blockSchema = z
+  .object({
+    id: z.string().min(1).max(100),
+    type: z.enum(["paragraph", "heading", "quote", "list"]),
+    text: z.string().max(20000),
+  })
+  .strict();
 export const issueSchema = z
   .object({
+    schemaVersion: z.literal(2).default(2),
+    theme: z.enum(themeIds).default("ecu-light"),
+    furniture: z
+      .object({
+        header: z.boolean().default(true),
+        footer: z.boolean().default(true),
+        folios: z.boolean().default(true),
+        topAccent: z.boolean().default(true),
+      })
+      .strict()
+      .prefault({}),
     id: z.string().min(1).max(100),
     title: z.string().trim().min(1).max(150),
     volume: z.number().int().min(1).max(999),
@@ -25,26 +40,44 @@ export const issueSchema = z
     sample: z.boolean(),
     sections: z
       .array(
-        z.object({
-          id: z.string().min(1).max(100),
-          name: z.string().trim().min(1).max(150),
-          enabled: z.boolean(),
-          template: z.enum(templates),
-          stories: z
-            .array(
-              z.object({
-                id: z.string().min(1).max(100),
-                title: z.string().trim().min(1).max(200),
-                subtitle: z.string().max(500),
-                byline: z.string().max(150),
-                blocks: z.array(blockSchema).max(100),
-              }),
-            )
-            .max(50),
-        }),
+        z
+          .object({
+            id: z.string().min(1).max(100),
+            name: z.string().trim().min(1).max(150),
+            enabled: z.boolean(),
+            template: z.enum(templates),
+            theme: z.enum(["inherit", ...themeIds]).default("inherit"),
+            stories: z
+              .array(
+                z
+                  .object({
+                    enabled: z.boolean().default(true),
+                    template: z
+                      .enum(["inherit", ...templateIds])
+                      .default("inherit"),
+                    pageTemplate: z
+                      .enum(["inherit", ...pageMasterIds])
+                      .default("inherit"),
+                    continuationTemplate: z
+                      .enum(["inherit", ...pageMasterIds])
+                      .default("inherit"),
+                    theme: z.enum(["inherit", ...themeIds]).default("inherit"),
+                    media: z.array(mediaReferenceSchema).max(30).default([]),
+                    id: z.string().min(1).max(100),
+                    title: z.string().trim().min(1).max(200),
+                    subtitle: z.string().max(500),
+                    byline: z.string().max(150),
+                    blocks: z.array(blockSchema).max(100),
+                  })
+                  .strict(),
+              )
+              .max(50),
+          })
+          .strict(),
       )
       .max(30),
   })
+  .strict()
   .superRefine((issue, ctx) => {
     const ids = [
       issue.id,
@@ -60,12 +93,33 @@ export const issueSchema = z
       });
   });
 export type Issue = z.infer<typeof issueSchema>;
+export type IssueInput = z.input<typeof issueSchema>;
+/** Read legacy records without rewriting storage. All records are validated before any save.
+ * Future versions and unknown fields are rejected rather than silently stripped.
+ */
+export function migrateIssue(input: unknown): Issue {
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    return issueSchema.parse(input);
+  const record = input as Record<string, unknown>;
+  const version = record.schemaVersion === undefined ? 1 : record.schemaVersion;
+  if (version !== 1 && version !== 2)
+    throw new Error(
+      `Unsupported issue schema version: ${String(version)}. Stored content has not been overwritten.`,
+    );
+  return issueSchema.parse({ ...record, schemaVersion: 2 });
+}
 export type Section = Issue["sections"][number];
 export type Story = Section["stories"][number];
 export type Block = Story["blocks"][number];
 export const id = () => crypto.randomUUID();
 export function newStory(): Story {
   return {
+    enabled: true,
+    template: "inherit",
+    pageTemplate: "inherit",
+    continuationTemplate: "inherit",
+    theme: "inherit",
+    media: [],
     id: id(),
     title: "Untitled story",
     subtitle: "",
@@ -76,6 +130,9 @@ export function newStory(): Story {
 export function newIssue(title: string, volume: number): Issue {
   return {
     id: id(),
+    schemaVersion: 2,
+    theme: "ecu-light",
+    furniture: { header: true, footer: true, folios: true, topAccent: true },
     title,
     volume,
     date: "",

@@ -16,6 +16,12 @@ import {
 } from "lucide-react";
 import { Shell, Empty } from "./shell";
 import { Preview } from "./preview";
+import {
+  IssueDesignControls,
+  SectionDesignControls,
+  StoryDesignControls,
+} from "./design-controls";
+import { templateRegistry } from "../magazine/templates";
 import { issueRepository } from "../repositories/issues";
 import {
   id,
@@ -99,6 +105,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
           : sectionType === "Notice Board"
             ? "bulletin"
             : "dispatch",
+      theme: "inherit",
       stories: [],
     };
     update({ ...issue, sections: [...issue.sections, s] });
@@ -251,6 +258,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                     />{" "}
                     Label this edition as sample / not approved
                   </label>
+                  <IssueDesignControls issue={issue} onChange={update} />
                   {issue.sample && (
                     <p className="sample-notice">
                       Volume 21 is fictional demonstration content. Replace and
@@ -392,12 +400,16 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                               >
                                 {templates.map((t) => (
                                   <option key={t} value={t}>
-                                    {t[0].toUpperCase() + t.slice(1)}
+                                    {templateRegistry[t].label}
                                   </option>
                                 ))}
                               </select>
                             </label>
                           </div>
+                          <SectionDesignControls
+                            section={section}
+                            onChange={changeSection}
+                          />
                           <label className="checkbox-label">
                             <input
                               type="checkbox"
@@ -412,11 +424,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                             Include in this issue
                           </label>
                           <p className="muted">
-                            {section.template === "feature"
-                              ? "Feature: large editorial headline and spacious pull quotes."
-                              : section.template === "bulletin"
-                                ? "Bulletin: divided blocks for scannable notices."
-                                : "Dispatch: balanced headlines and readable updates."}
+                            {templateRegistry[section.template].description}
                           </p>
                         </section>
                         <div className="stories-heading">
@@ -573,6 +581,7 @@ function StoryEditor({
           </button>
         </div>
       </div>
+      <StoryDesignControls story={story} onChange={onChange} />
       <label>
         Headline
         <input

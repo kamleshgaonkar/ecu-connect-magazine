@@ -5,10 +5,23 @@ import type { Issue } from "../domain/issue";
 import { magazineDocument } from "../magazine/document";
 export function Preview({ issue }: { issue: Issue }) {
   const frame = useRef<HTMLIFrameElement>(null);
-  const doc = useMemo(() => magazineDocument(issue), [issue]);
+  const doc = useMemo(() => {
+    const id = crypto.randomUUID();
+    try {
+      return { id, html: magazineDocument(issue, id), error: null };
+    } catch {
+      return {
+        id,
+        html: null,
+        error:
+          "Preview needs a nonempty issue title, valid volume and nonempty section/story titles. Check content limits before retrying.",
+      };
+    }
+  }, [issue]);
   const [layout, setLayout] = useState<{
       pages: number;
       warnings: string[];
+      notices: string[];
     } | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -17,9 +30,14 @@ export function Preview({ issue }: { issue: Issue }) {
       if (
         e.source === frame.current?.contentWindow &&
         e.data?.type === "magazine-ready" &&
+        e.data.renderId === doc.id &&
         Array.isArray(e.data.warnings)
       )
-        setLayout({ pages: e.data.pages, warnings: e.data.warnings });
+        setLayout({
+          pages: e.data.pages,
+          warnings: e.data.warnings,
+          notices: e.data.notices ?? [],
+        });
     }
     window.addEventListener("message", receive);
     frame.current?.contentWindow?.postMessage(
@@ -27,7 +45,7 @@ export function Preview({ issue }: { issue: Issue }) {
       "*",
     );
     return () => window.removeEventListener("message", receive);
-  }, []);
+  }, [doc.id]);
   async function download() {
     setBusy(true);
     setError("");
@@ -53,6 +71,18 @@ export function Preview({ issue }: { issue: Issue }) {
       setBusy(false);
     }
   }
+  if (doc.error)
+    return (
+      <section className="preview-panel">
+        <p className="error" role="alert">
+          {doc.error}
+        </p>
+        <p className="muted">
+          Return to Edit content to correct the details. Your unsaved content is
+          retained.
+        </p>
+      </section>
+    );
   return (
     <section className="preview-panel">
       <div className="preview-toolbar">
@@ -87,6 +117,11 @@ export function Preview({ issue }: { issue: Issue }) {
           </>
         )}
       </div>
+      {layout?.notices.map((notice) => (
+        <p key={notice} className="muted mt-2" role="note">
+          {notice}
+        </p>
+      ))}
       {issue.sample && (
         <p className="sample-notice">
           Demonstration content only. This edition contains fictional editorial
@@ -108,7 +143,7 @@ export function Preview({ issue }: { issue: Issue }) {
         }
         title="A4 magazine pages"
         sandbox="allow-scripts"
-        srcDoc={doc}
+        srcDoc={doc.html ?? undefined}
         className="magazine-frame"
       />
       <p className="muted preview-note">

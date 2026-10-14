@@ -1,4 +1,4 @@
-import { issueSchema, type Issue } from "../domain/issue";
+import { migrateIssue, type Issue } from "../domain/issue";
 import { sampleIssue } from "../domain/sample";
 export interface IssueRepository {
   list(): Promise<Issue[]>;
@@ -19,7 +19,7 @@ export class LocalIssueRepository implements IssueRepository {
       throw new Error(
         "Saved issues are invalid. Your stored content has not been overwritten.",
       );
-    return data.map((i) => issueSchema.parse(i));
+    return data.map((i) => migrateIssue(i));
   }
   async list() {
     return this.read();
@@ -28,7 +28,7 @@ export class LocalIssueRepository implements IssueRepository {
     return this.read().find((i) => i.id === id) ?? null;
   }
   async save(issue: Issue) {
-    const parsed = issueSchema.parse(issue);
+    const parsed = migrateIssue(issue);
     const all = this.read();
     const i = all.findIndex((x) => x.id === issue.id);
     if (i < 0) all.push(parsed);

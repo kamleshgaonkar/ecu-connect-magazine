@@ -27,13 +27,13 @@ E2E tests start the production server if one is not already running. They exerci
 
 ## Working slice
 
-Create an issue on the dashboard, add any of the seven section types, rename them, select feature/dispatch/bulletin templates, reorder or exclude sections, then add and reorder stories. Story blocks support paragraphs, headings, pull quotes and bullet lists, with inline **bold** and _italic_ marks (select text and use the block toolbar). Save explicitly; unsaved edits have a status indicator and navigation warning. Preview/export uses current edits even before saving.
+Create an issue on the dashboard, add any of the seven section types, rename them, select feature/dispatch/bulletin templates, reorder or exclude sections, then add and reorder stories. Stories can be excluded individually and can inherit or override section templates/themes; opening and continuation page masters can be selected separately. Issue-level furniture switches control section headers, the issue/date footer, printed folios and the yellow top accent. Story blocks support paragraphs, headings, pull quotes and bullet lists, with inline **bold** and _italic_ marks (select text and use the block toolbar). Save explicitly; unsaved edits have a status indicator and navigation warning. Preview/export uses current edits even before saving.
 
 The `IssueRepository` contract isolates storage from the UI. Its current adapter stores validated JSON in browser localStorage, seeds Volume 21 only on first use, and reports storage errors instead of overwriting corrupt data. No Supabase account is needed. A Supabase adapter can implement the same async list/get/save/remove methods. Browser data is specific to the current origin/profile and is not shared between users or devices. Clearing browser storage removes it.
 
 ## Pagination and PDF
 
-`src/magazine/document.ts` produces one self-contained A4 document for both the sandboxed preview iframe and server Chromium. Shared page components include the cover, running header/footer, contents rows and typed content blocks. The browser measures rendered heights, flows blocks onto new pages and splits oversized text at word boundaries (Unicode-safe fallback). No text is silently shrunk or clipped. Every story starts on a fresh page. Contents pagination is reserved before stories and page references are populated from actual page positions, including multi-page stories. Cover is counted as page 1 without a printed folio.
+`src/magazine/document.ts` produces one self-contained A4 document for both the sandboxed preview iframe and server Chromium. Shared page components include the cover, running header/footer, contents rows and typed content blocks. The browser measures rendered heights, flows blocks onto new pages and splits oversized text at word boundaries (Unicode-safe fallback). No text is silently shrunk or clipped. Every story starts on a fresh page. Contents pagination is reserved before stories and page references are populated from actual page positions, including multi-page stories. Cover and the primary contents occupy physical pages 1 and 2 without printed folios. The first article is printed folio 1 on physical page 3. Additional contents pages follow the articles, preserving that invariant without clipping or shrinking contents text.
 
 `POST /api/export` accepts a validated issue snapshot, renders the same document with Playwright, checks layout warnings and returns an A4 PDF attachment. Invalid input returns 400; oversized payloads return 413; unresolved layout/cover overflow returns 422. External renderer requests are blocked. Chromium processes are closed after export. PDF requires a Node server with Chromium binaries and libraries; it is not an Edge or static-host export.
 
@@ -48,3 +48,15 @@ The export endpoint is intended for this local milestone. Before public multiuse
 - `src/components`: dashboard, issue editor, structured story editor, shell and preview.
 - `src/magazine`: shared templates, page components and measured pagination.
 - `src/app/api/export`: isolated Chromium PDF path.
+
+## Phase 3A foundations
+
+The approved Volume 20 baseline now has shared A4/15 mm geometry, blue `#034EA2` and yellow `#FFDD00` tokens, typed DOM page masters and a shared measured renderer. The three existing layouts remain selectable; `editorial` and `paper` add plain-article and inset-paper foundations. These are not complete reproductions of the 17 reference template families. The dashboard/shell styling is unchanged; editor additions are small appearance controls.
+
+Issue records have `schemaVersion: 2`. `migrateIssue()` accepts the original unversioned/v1 schema and preserves all prior text, IDs, section/template ordering, dates and sample status. Reads do not rewrite browser storage; explicit save writes validated v2 records under the existing localStorage key. Future versions and unknown fields are rejected instead of silently discarded. Do not clear localStorage to upgrade.
+
+Themes resolve from issue → section → story. Story template and page-master choices independently inherit from their parent; a continuation can use a different master. Physical PDF index, printed folio and furniture visibility are separate. Footer folios use `1`, `2`, etc.; contents references use `01`, `02`, etc. Font families prefer Poppins/Impact where installed; no original font files are bundled or extracted. The preview explicitly reports system fallback typography.
+
+`MediaAssetRepository` separates local binary assets from issue JSON. Its Phase 3A adapter is in-memory/session-only and tests metadata limits and copy isolation. Story media references have alt text, caption, credit and focal point. Upload UI, durable asset storage and image placement are deferred; a nonempty media reference currently raises a clear layout warning and blocks PDF export rather than silently omitting it. No external storage or Supabase is introduced.
+
+See [the Phase 3A report](docs/phase3a-implementation.md) for every changed file, validation, screenshots, branch status and limits. The archived Phase 1 sample PDF is retained at its original path. The separate foundation proof is `/previews/ecu-phase3a-foundation.pdf`.

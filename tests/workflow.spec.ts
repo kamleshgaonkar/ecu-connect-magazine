@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { magazineDocument } from "../src/magazine/document";
+import { newStory } from "../src/domain/issue";
 import { sampleIssue } from "../src/domain/sample";
 test("create, structure, persist, preview and export an issue", async ({
   page,
@@ -43,7 +44,11 @@ test("create, structure, persist, preview and export an issue", async ({
   const frame = page.frameLocator("iframe");
   expect(await frame.locator(".page").count()).toBeGreaterThan(3); // cover, contents and measured story pages
   const start = await frame.locator(".toc-number").first().textContent();
-  expect(start).toBe("03");
+  expect(start).toBe("01");
+  await expect(frame.locator('.page[data-physical-page="3"]')).toHaveAttribute(
+    "data-folio",
+    "1",
+  );
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export PDF" }).click();
   const download = await downloadPromise;
@@ -62,9 +67,14 @@ test("measured pagination preserves long content and actual table of contents", 
   issue.sections = issue.sections.slice(0, 2);
   const long =
     "Long story — a thoughtful connection. ".repeat(1800) + "END_OF_STORY";
-  issue.sections[0].stories[0].blocks = [
-    { id: "long-block", type: "paragraph", text: long },
-  ];
+  issue.sections[0].stories[0].blocks = Array.from(
+    { length: Math.ceil(long.length / 18000) },
+    (_, i) => ({
+      id: `long-block-${i}`,
+      type: "paragraph" as const,
+      text: long.slice(i * 18000, (i + 1) * 18000),
+    }),
+  );
   await page.setContent(magazineDocument(issue));
   await page.waitForFunction(() =>
     Boolean(
@@ -90,7 +100,9 @@ test("measured pagination preserves long content and actual table of contents", 
     }),
   });
   const actual = await second.locator(".page-number").textContent();
-  expect(await page.locator(".toc-number").nth(1).textContent()).toBe(actual);
+  expect(await page.locator(".toc-number").nth(1).textContent()).toBe(
+    actual?.padStart(2, "0"),
+  );
   const result = await page.evaluate(
     () =>
       (window as unknown as { __magazineResult: { warnings: string[] } })
@@ -153,6 +165,7 @@ test("multi-page contents stay accurate and rich text survives page breaks", asy
   issue.sections = issue.sections.slice(0, 1);
   const strongText = "A carefully considered editorial detail. ".repeat(350);
   issue.sections[0].stories = Array.from({ length: 25 }, (_, i) => ({
+    ...newStory(),
     id: `test-story-${i}`,
     title: `Editorial dispatch ${i + 1}`,
     subtitle: "",
@@ -184,6 +197,11 @@ test("multi-page contents stay accurate and rich text survives page breaks", asy
   await expect(
     page.getByRole("heading", { name: "Contents · continued" }).first(),
   ).toBeVisible();
+  await expect(page.locator(".page").nth(2)).toHaveAttribute("data-folio", "1");
+  await expect(page.locator(".page").last()).toHaveAttribute(
+    "data-kind",
+    "contents",
+  );
   for (const index of [0, 24]) {
     const actual = await page
       .locator(".page")
@@ -196,7 +214,7 @@ test("multi-page contents stay accurate and rich text survives page breaks", asy
       .locator(".page-number")
       .textContent();
     expect(await page.locator(".toc-number").nth(index).textContent()).toBe(
-      actual,
+      actual?.padStart(2, "0"),
     );
   }
   expect(

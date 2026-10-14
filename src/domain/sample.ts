@@ -1,5 +1,5 @@
 import type { Issue } from "./issue";
-import { sectionNames } from "./issue";
+import { sectionNames, issueSchema } from "./issue";
 const titles = [
   "Across oceans, closer together",
   "Small moments. Shared connections.",
@@ -18,7 +18,7 @@ const descriptions = [
   "An illustrative reflection on thoughtful handovers. This sample is not an official statement of company policy or values.",
   "A sample calendar feature exploring how colleagues might share cultural traditions. Confirm local observance dates and regional guidance before publication.",
 ];
-export const sampleIssue: Issue = {
+export const sampleIssue: Issue = issueSchema.parse({
   id: "volume-21-sample",
   title: "Connections that move us",
   volume: 21,
@@ -64,4 +64,4 @@ export const sampleIssue: Issue = {
       },
     ],
   })),
-};
+});

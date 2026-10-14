@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { chromium } from "playwright";
 import { existsSync } from "node:fs";
-import { issueSchema } from "../../../domain/issue";
+import { migrateIssue, type Issue } from "../../../domain/issue";
 import { magazineDocument } from "../../../magazine/document";
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -23,22 +23,25 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const result = issueSchema.safeParse(json);
-    if (!result.success)
+    let issue: Issue;
+    try {
+      issue = migrateIssue(json);
+    } catch {
       return NextResponse.json(
         {
           error:
-            "Invalid issue content. Check title, volume and content limits.",
+            "Invalid issue content or unsupported schema version. Check title, volume and content limits.",
         },
         { status: 400 },
       );
+    }
     const executablePath =
       process.env.CHROMIUM_EXECUTABLE_PATH ||
       (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined);
     browser = await chromium.launch({ headless: true, executablePath });
     const page = await browser.newPage();
     await page.route("**/*", (route) => route.abort()); // The renderer is deliberately self-contained.
-    await page.setContent(magazineDocument(result.data), { waitUntil: "load" });
+    await page.setContent(magazineDocument(issue), { waitUntil: "load" });
     await page.waitForFunction(
       () =>
         Boolean(
@@ -68,7 +71,7 @@ export async function POST(request: Request) {
     return new Response(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="ecu-connect-volume-${result.data.volume}.pdf"`,
+        "Content-Disposition": `attachment; filename="ecu-connect-volume-${issue.volume}.pdf"`,
         "Cache-Control": "no-store",
       },
     });
