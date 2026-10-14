@@ -1,0 +1,53 @@
+import type { Issue } from "../domain/issue";
+export function escapeHtml(value: string) {
+  return value.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ]!,
+  );
+}
+export const magazineStyles = `
+*{box-sizing:border-box}html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;color:#183535;overflow-wrap:anywhere}body{background:#e9eeeb}.pages{display:flex;flex-direction:column;gap:24px;align-items:center;padding:24px}.page{position:relative;width:210mm;height:297mm;flex:none;background:#fff;padding:18mm 18mm 17mm;overflow:visible;box-shadow:0 4px 20px #203d3514;break-after:page}.running-header{height:13mm;border-bottom:1px solid #d5e0db;display:flex;justify-content:space-between;font-size:10px;letter-spacing:1.4px;text-transform:uppercase}.page-body{height:241mm;padding-top:8mm;overflow:visible}.page-footer{position:absolute;bottom:9mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:10px;color:#657c73;border-top:1px solid #d5e0db;padding-top:4mm}.section-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#337a68;margin:0 0 16px}.story-title{font-family:Georgia,serif;font-size:36px;line-height:1.12;letter-spacing:-.7px;margin:0 0 16px;overflow-wrap:anywhere}.subtitle{font-size:16px;line-height:1.5;color:#65736e;margin:0 0 16px}.byline{font-size:10px;text-transform:uppercase;letter-spacing:1px;margin:0 0 24px;color:#65736e}.text-block{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font-size:14px;margin:0 0 16px}.heading{font-family:Georgia,serif;font-size:23px;line-height:1.3;margin-top:10px}.quote{font-family:Georgia,serif;font-size:23px;line-height:1.4;color:#26715f;border-left:3px solid #daa66a;padding-left:18px;margin:20px 0}.list-item{padding-left:20px;position:relative}.list-item:before{content:'•';position:absolute;left:2px}.feature .story-title{font-size:43px}.bulletin .text-block{border-bottom:1px solid #edf1ee;padding-bottom:12px}.continuation{font-size:10px;text-transform:uppercase;color:#71857d;letter-spacing:1px;margin:0 0 16px}.toc-title{font-family:Georgia,serif;font-size:44px;margin:12px 0 26px}.toc-row{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #d9e2de;padding:14px 0;line-height:1.4;font-size:16px;overflow-wrap:anywhere}.toc-row small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#567568;margin-bottom:6px}.toc-number{flex:none;color:#27624f}.cover{background:#123f39;color:#fff;padding:24mm 18mm}.cover-brand{font-size:39px;font-weight:bold;letter-spacing:-2px}.cover-brand em{font-family:Georgia,serif;font-weight:normal}.cover-kicker{font-size:10px;letter-spacing:3px;margin-top:12px}.cover-mark{width:118mm;height:118mm;border:1px solid #619181;border-radius:50%;position:absolute;right:12mm;top:74mm;background:repeating-linear-gradient(130deg,transparent 0,transparent 18px,#5f8c6f30 19px,#5f8c6f30 20px)}.cover-title{position:relative;margin-top:114mm;font-family:Georgia,serif;font-size:52px;line-height:1.06;max-width:155mm;overflow-wrap:anywhere}.cover-meta{position:absolute;bottom:24mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:11px;letter-spacing:1px}.sample-stamp{position:relative;color:#efd1a3;font-size:11px;margin-top:14px;letter-spacing:1px}.warning{background:#ffe3d3;border:2px solid #b0441c}.print-warning{display:none}@page{size:A4;margin:0}@media print{body{background:white}.pages{padding:0;gap:0;display:block}.page{box-shadow:none;margin:0}.page:last-child{break-after:auto}.print-warning{display:block}}
+`;
+// The same self-contained document runs in preview and Chromium. It measures actual
+// rendered blocks, moves them to new pages, and splits oversized text without loss.
+export function magazineDocument(issue: Issue): string {
+  const data = JSON.stringify(issue)
+    .replace(/</g, "\\u003c")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ECU Connect · Volume ${issue.volume}</title><style>${magazineStyles}</style></head><body><div class="pages" id="pages"></div><script>
+ const issue=${data};
+ window.addEventListener('message',event=>{if(event.source===parent&&event.data?.type==='magazine-request'&&window.__magazineReady)parent.postMessage({type:'magazine-ready',...window.__magazineResult},'*');});
+ const root=document.getElementById('pages'); const warnings=[]; const entries=[]; let page,body; const maxPages=300;
+ function el(tag,cls,text){const e=document.createElement(tag);e.className=cls||'';if(text!==undefined)e.textContent=text;return e;}
+ function rich(tag,cls,text){const node=el(tag,cls);const re=/\\*\\*([^*]+)\\*\\*|\\*([^*]+)\\*/g;let at=0;for(const match of text.matchAll(re)){node.append(document.createTextNode(text.slice(at,match.index)));node.append(el(match[1]?'strong':'em','',match[1]||match[2]));at=match.index+match[0].length;}node.append(document.createTextNode(text.slice(at)));return node;}
+ function sliceStyled(source,start,end){let pos=0;function copy(n){if(n.nodeType===3){const chars=Array.from(n.textContent);const a=Math.max(0,start-pos),b=Math.min(chars.length,end-pos);pos+=chars.length;return document.createTextNode(chars.slice(a,Math.max(a,b)).join(''));}const out=n.cloneNode(false);for(const c of n.childNodes){const child=copy(c);if(child.textContent)out.append(child);}return out;}return copy(source);}
+ function makePage(template=''){if(root.children.length>=maxPages)throw new Error('Page limit of 300 reached. Split this issue into smaller editions.');const p=el('article','page '+template);const head=el('header','running-header');head.append(el('span','','ECU Connect'),el('span','','Volume '+issue.volume));p.append(head);const b=el('div','page-body');p.append(b);const foot=el('footer','page-footer');foot.append(el('span','',issue.sample?'SAMPLE · NOT APPROVED':'ECU WORLDWIDE · ECU CONNECT'),el('span','page-number',''));p.append(foot);root.append(p);return {page:p,body:b};}
+ function fresh(template,title){({page,body}=makePage(template));if(title)body.append(el('div','continuation',title+' · continued'));}
+ function fits(){return body.scrollHeight<=body.clientHeight+1&&body.scrollWidth<=body.clientWidth+1;}
+ function add(node,template,title){body.append(node);if(fits())return;node.remove();if(body.children.length){fresh(template,title);body.append(node);if(fits())return;node.remove();}
+  // Split by Unicode code points, retaining all whitespace and punctuation.
+  const chars=Array.from(node.textContent);let offset=0;
+  while(offset<chars.length){let lo=1,hi=chars.length-offset,best=0;const part=node.cloneNode(false);body.append(part);while(lo<=hi){const mid=Math.floor((lo+hi)/2);part.replaceChildren(...sliceStyled(node,offset,offset+mid).childNodes);if(fits()){best=mid;lo=mid+1;}else hi=mid-1;}
+   if(!best){part.remove();warnings.push('A layout block cannot fit on an A4 page: '+title);body.append(node);page.classList.add('warning');return;}
+   // Prefer word boundaries while keeping exact text in the following fragment.
+   let end=best;if(offset+best<chars.length){const fragment=chars.slice(offset,offset+best).join('');const cut=fragment.lastIndexOf(' ');if(cut>best*.65)end=Array.from(fragment.slice(0,cut+1)).length;}
+   part.replaceChildren(...sliceStyled(node,offset,offset+end).childNodes);offset+=end;if(offset<chars.length)fresh(template,title);
+  }
+ }
+ async function render(){await document.fonts.ready;
+ const cover=el('article','page cover');cover.append(el('div','cover-brand','ECU Connect'),el('div','cover-kicker','THE WORLD, WITHIN REACH.'),el('div','cover-mark'));const ct=el('h1','cover-title',issue.title);cover.append(ct);if(issue.sample)cover.append(el('div','sample-stamp','DEMONSTRATION EDITION · NOT APPROVED'));const cm=el('div','cover-meta');cm.append(el('span','','VOLUME '+issue.volume),el('span','',issue.date||'DRAFT EDITION'));cover.append(cm);root.append(cover);
+ if((cover.querySelector('.sample-stamp')||ct).getBoundingClientRect().bottom>cm.getBoundingClientRect().top-20)warnings.push('Cover title exceeds the available space. Shorten the title before export.');
+ const active=issue.sections.filter(s=>s.enabled);const stories=active.flatMap(s=>s.stories.map(story=>({section:s,story})));
+ ({page,body}=makePage());body.append(el('h2','toc-title','In this issue'));if(!stories.length)body.append(el('p','text-block','No stories yet. Add a section and story to begin.'));
+ for(const {section,story} of stories){const row=el('div','toc-row');const label=el('div');label.append(el('small','',section.name),el('span','',story.title));const number=el('span','toc-number','000');row.append(label,number);body.append(row);if(!fits()){row.remove();({page,body}=makePage());body.append(el('h2','toc-title','Contents · continued'));body.append(row);if(!fits())warnings.push('A contents entry is too tall: '+story.title);}entries.push({id:story.id,number});}
+ for(const {section,story} of stories){fresh(section.template);const start=root.children.length;const label=el('div','section-label',section.name);add(label,section.template,story.title);add(el('h2','story-title',story.title),section.template,story.title);if(story.subtitle)add(el('p','subtitle',story.subtitle),section.template,story.title);if(story.byline)add(el('p','byline',story.byline),section.template,story.title);for(const block of story.blocks){if(!block.text)continue;if(block.type==='list'){for(const line of block.text.split('\\n'))add(rich('p','text-block list-item',line),section.template,story.title);}else add(rich(block.type==='heading'?'h3':block.type==='quote'?'blockquote':'p','text-block '+(block.type==='paragraph'?'':block.type),block.text),section.template,story.title);}entries.find(e=>e.id===story.id).number.textContent=String(start).padStart(2,'0');}
+ [...root.children].forEach((p,i)=>{const n=p.querySelector('.page-number');if(n)n.textContent=String(i+1).padStart(2,'0');const b=p.querySelector('.page-body');if(b&&(b.scrollHeight>b.clientHeight+1||b.scrollWidth>b.clientWidth+1))warnings.push('Page '+(i+1)+' overflows; text remains visible. Export is blocked.');});
+ window.__magazineResult={pages:root.children.length,warnings:[...new Set(warnings)]};window.__magazineReady=true;parent.postMessage({type:'magazine-ready',...window.__magazineResult},'*');
+ }
+ render().catch(e=>{window.__magazineResult={pages:root.children.length,warnings:[e.message]};window.__magazineReady=true;parent.postMessage({type:'magazine-ready',...window.__magazineResult},'*');});
+ </script></body></html>`;
+}
