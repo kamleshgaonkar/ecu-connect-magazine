@@ -10,6 +10,12 @@ export const templateRegistry: Record<
   TemplateId,
   { label: string; description: string; master: PageMasterId }
 > = {
+  opener: {
+    label: "T03 · Photographic section opener",
+    description:
+      "Photographic hero and numbered section opening; plain article continuations.",
+    master: "opener",
+  },
   feature: {
     label: "Feature",
     description: "Existing large headline and pull-quote treatment.",
@@ -56,7 +62,9 @@ export function resolveStoryDesign(
     story.pageTemplate === "inherit" ? defaultMaster : story.pageTemplate;
   const continuationTemplate =
     story.continuationTemplate === "inherit"
-      ? pageTemplate
+      ? pageTemplate === "opener"
+        ? "article"
+        : pageTemplate
       : story.continuationTemplate;
   return {
     template,
@@ -68,19 +76,24 @@ export function resolveStoryDesign(
 }
 export function buildRenderModel(input: IssueInput) {
   const issue = migrateIssue(input);
+  const sections = issue.sections.filter(
+    (s) => s.enabled && s.stories.some((t) => t.enabled),
+  );
   return {
     issue,
-    stories: issue.sections
-      .filter((s) => s.enabled)
-      .flatMap((section) =>
-        section.stories
-          .filter((s) => s.enabled)
-          .map((story) => ({
-            sectionName: section.name,
-            story,
-            ...resolveStoryDesign(issue.theme, section, story),
-          })),
-      ),
+    stories: sections.flatMap((section) =>
+      section.stories
+        .filter((s) => s.enabled)
+        .map((story) => ({
+          sectionName: section.name,
+          sectionId: section.id,
+          sectionNumber: sections.indexOf(section) + 1,
+          sectionStart:
+            section.stories.filter((s) => s.enabled)[0].id === story.id,
+          story,
+          ...resolveStoryDesign(issue.theme, section, story),
+        })),
+    ),
   };
 }
 export type RenderModel = ReturnType<typeof buildRenderModel>;

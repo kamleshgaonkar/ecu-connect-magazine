@@ -2,13 +2,42 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, CheckCircle2, AlertTriangle } from "lucide-react";
 import type { Issue } from "../domain/issue";
+import { mediaRepository } from "../media/local";
+import { prepareRenderIssue } from "../media/render";
 import { magazineDocument } from "../magazine/document";
 export function Preview({ issue }: { issue: Issue }) {
   const frame = useRef<HTMLIFrameElement>(null);
+  const [prepared, setPrepared] = useState<{
+    issue: Issue | null;
+    error: string | null;
+  }>({ issue: null, error: null });
+  useEffect(() => {
+    let active = true;
+    prepareRenderIssue(issue, mediaRepository)
+      .then((value) => {
+        if (active) setPrepared({ issue: value, error: null });
+      })
+      .catch((e) => {
+        if (active)
+          setPrepared({
+            issue: null,
+            error:
+              e instanceof Error && e.name === "ZodError"
+                ? "Preview needs a nonempty issue title, valid volume and nonempty section/story titles. Check content limits before retrying."
+                : e instanceof Error
+                  ? e.message
+                  : "Unable to read local images.",
+          });
+      });
+    return () => {
+      active = false;
+    };
+  }, [issue]);
   const doc = useMemo(() => {
     const id = crypto.randomUUID();
+    if (!prepared.issue) return { id, html: null, error: prepared.error };
     try {
-      return { id, html: magazineDocument(issue, id), error: null };
+      return { id, html: magazineDocument(prepared.issue, id), error: null };
     } catch {
       return {
         id,
@@ -17,7 +46,9 @@ export function Preview({ issue }: { issue: Issue }) {
           "Preview needs a nonempty issue title, valid volume and nonempty section/story titles. Check content limits before retrying.",
       };
     }
-  }, [issue]);
+  }, [prepared]);
+  const payload = prepared.issue ? JSON.stringify(prepared.issue) : "";
+  const tooLarge = new TextEncoder().encode(payload).length > 1_000_000;
   const [layout, setLayout] = useState<{
       pages: number;
       warnings: string[];
@@ -53,7 +84,7 @@ export function Preview({ issue }: { issue: Issue }) {
       const response = await fetch("/api/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(issue),
+        body: payload,
       });
       if (!response.ok) {
         const data = await response.json();
@@ -95,7 +126,13 @@ export function Preview({ issue }: { issue: Issue }) {
         </div>
         <button
           className="button primary"
-          disabled={busy || !layout || !!layout.warnings.length}
+          disabled={
+            busy ||
+            !prepared.issue ||
+            tooLarge ||
+            !layout ||
+            !!layout.warnings.length
+          }
           onClick={download}
         >
           <Download size={16} />
@@ -126,6 +163,13 @@ export function Preview({ issue }: { issue: Issue }) {
         <p className="sample-notice">
           Demonstration content only. This edition contains fictional editorial
           copy and is not approved for publication.
+        </p>
+      )}
+      {tooLarge && (
+        <p className="error" role="alert">
+          Images and content exceed the existing 1 MB PDF request limit. Replace
+          large images with smaller files before export. No images have been
+          resized or omitted.
         </p>
       )}
       {error && (

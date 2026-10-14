@@ -170,6 +170,16 @@ for (const storyCount of [2, 25]) {
       ...newStory(),
       id: `test-story-${i}`,
       title: `Editorial dispatch ${i + 1}`,
+      visual: {
+        summary:
+          storyCount === 25
+            ? "A longer editorial summary for measuring columns and ensuring that all contents continuations precede the first article. ".repeat(
+                3,
+              )
+            : "",
+        position: "below",
+        heroLayout: "large",
+      },
       subtitle: "",
       byline: "",
       blocks: [

@@ -4,7 +4,7 @@ import {
   type MediaAssetData,
 } from "../domain/media";
 /** Local binary assets live behind this contract, separate from issue JSON.
- * Phase 3A supplies a session adapter; durable browser storage/upload UI is deferred.
+ * Memory adapter supports isolated tests; local.ts supplies durable IndexedDB storage.
  * No arbitrary URL or external storage is part of this interface.
  */
 export interface MediaAssetRepository {

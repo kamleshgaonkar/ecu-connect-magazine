@@ -29,6 +29,7 @@ export class LocalIssueRepository implements IssueRepository {
   }
   async save(issue: Issue) {
     const parsed = migrateIssue(issue);
+    delete parsed.renderAssets;
     const all = this.read();
     const i = all.findIndex((x) => x.id === issue.id);
     if (i < 0) all.push(parsed);

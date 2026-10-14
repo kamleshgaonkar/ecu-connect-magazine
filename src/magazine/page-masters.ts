@@ -1,3 +1,5 @@
+import type { createMediaImage } from "./media-image";
+import type { MediaReference } from "../domain/media";
 import type { Issue } from "../domain/issue";
 import type { PageMasterId } from "../domain/design";
 import type { Theme } from "./tokens";
@@ -9,11 +11,19 @@ export type PageMasterOptions = {
   theme: Theme;
   sectionName?: string;
   issue: Issue;
+  hero?: MediaReference;
+  position?: "below" | "left" | "right";
+  heroLayout?: "large" | "full";
+  sectionNumber?: number;
+  sectionStart?: boolean;
 };
 /** Self-contained DOM components used by the exact same document in preview/PDF.
  * Their source is serialized into the sandbox; do not add module/global dependencies.
  */
-export function createPageMaster(options: PageMasterOptions) {
+export function createPageMaster(
+  options: PageMasterOptions,
+  mediaImage: typeof createMediaImage,
+) {
   const {
     kind,
     master = "article",
@@ -37,8 +47,44 @@ export function createPageMaster(options: PageMasterOptions) {
   if (issue.furniture.header && kind === "article") {
     const header = document.createElement("header");
     header.className = "section-header";
-    header.textContent = sectionName;
+    header.textContent =
+      master === "opener" && sectionName === "What's Up @ ECU Worldwide"
+        ? "What's Up @\nECU Worldwide"
+        : sectionName;
     page.append(header);
+  }
+  if (master === "opener") {
+    page.classList.add(
+      "opener",
+      `opener-${options.position ?? "below"}`,
+      `hero-${options.heroLayout ?? "large"}`,
+    );
+    page.append(
+      mediaImage(
+        options.hero,
+        issue.renderAssets ?? [],
+        "opener-photo",
+        "Select a local section photograph",
+      ),
+    );
+    const fade = document.createElement("div");
+    fade.className = "opener-fade";
+    page.append(fade);
+    if (options.hero?.caption || options.hero?.credit) {
+      const credit = document.createElement("div");
+      credit.className = "photo-credit opener-photo-credit";
+      credit.textContent = [options.hero.caption, options.hero.credit]
+        .filter(Boolean)
+        .join(" · ");
+      page.append(credit);
+    }
+    if (options.sectionStart) {
+      const ordinal = document.createElement("div");
+      ordinal.className = "section-ordinal";
+      ordinal.textContent = String(options.sectionNumber).padStart(2, "0");
+      ordinal.setAttribute("aria-hidden", "true");
+      page.append(ordinal);
+    }
   }
   const body = document.createElement("div");
   body.className = "page-body";
@@ -61,32 +107,74 @@ export function createPageMaster(options: PageMasterOptions) {
   }
   return { page, body };
 }
-export function createCoverMaster(issue: Issue) {
+export function createCoverMaster(
+  issue: Issue,
+  mediaImage: typeof createMediaImage,
+) {
   function node(tag: string, cls: string, text?: string) {
     const n = document.createElement(tag);
     n.className = cls;
     if (text) n.textContent = text;
     return n;
   }
-  const page = node("article", "page cover");
+  const page = node(
+    "article",
+    `page cover cover-${issue.cover?.surface ?? "white"}`,
+  );
   page.dataset.kind = "cover";
   page.dataset.master = "cover";
   page.append(
-    node("div", "cover-brand", "ECU CONNECT"),
-    node("div", "cover-kicker", "FORTNIGHTLY EDITION"),
-    node("div", "cover-mark"),
+    mediaImage(
+      issue.cover?.image,
+      issue.renderAssets ?? [],
+      "cover-photo",
+      "Select a local cover photograph",
+    ),
   );
-  const title = node("h1", "cover-title", issue.title);
-  page.append(title);
+  page.append(node("div", "cover-fade"));
+  const plaque = node("div", "cover-logo");
+  plaque.append(
+    mediaImage(
+      issue.cover?.logo,
+      issue.renderAssets ?? [],
+      "logo-image",
+      "Approved ECU Worldwide logo required",
+    ),
+  );
+  page.append(plaque, node("div", "cover-brand", "ECU CONNECT"));
+  if (issue.cover?.image?.caption || issue.cover?.image?.credit)
+    page.append(
+      node(
+        "div",
+        "photo-credit cover-photo-credit",
+        [issue.cover.image.caption, issue.cover.image.credit]
+          .filter(Boolean)
+          .join(" · "),
+      ),
+    );
+  const meta = node("div", "cover-meta");
+  meta.append(
+    node(
+      "span",
+      "edition-label",
+      issue.cover?.edition ?? "FORTNIGHTLY EDITION",
+    ),
+    node(
+      "span",
+      "edition-date",
+      `VOL. ${issue.volume} | ${issue.date || "DRAFT EDITION"}`,
+    ),
+  );
+  page.append(meta);
+  const text = node("div", "cover-copy");
+  const title = node("h1", "cover-title", issue.cover?.headline || issue.title);
+  text.append(title, node("div", "cover-rule"));
+  if (issue.cover?.supportingText)
+    text.append(node("p", "cover-support", issue.cover.supportingText));
+  page.append(text);
   if (issue.sample)
     page.append(
       node("div", "sample-stamp", "DEMONSTRATION EDITION · NOT APPROVED"),
     );
-  const meta = node("div", "cover-meta");
-  meta.append(
-    node("span", "", `VOLUME ${issue.volume}`),
-    node("span", "", issue.date || "DRAFT EDITION"),
-  );
-  page.append(meta);
-  return { page, title, meta };
+  return { page, title, meta, text };
 }

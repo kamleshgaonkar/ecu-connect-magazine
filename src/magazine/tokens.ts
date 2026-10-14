@@ -18,9 +18,10 @@ export const designTokens = {
     grey: "#58595B",
   },
   fonts: {
-    body: "Poppins, Arial, Helvetica, sans-serif",
-    display: 'Impact, "Arial Narrow", Arial, sans-serif',
-    condensed: '"Bebas Neue", Impact, "Arial Narrow", Arial, sans-serif',
+    body: '"ECU Poppins", Poppins, Arial, Helvetica, sans-serif',
+    display: '"ECU Bebas", Impact, "Arial Narrow", Arial, sans-serif',
+    condensed:
+      '"ECU Bebas", "Bebas Neue", Impact, "Arial Narrow", Arial, sans-serif',
   },
   type: {
     bodyPt: 9,

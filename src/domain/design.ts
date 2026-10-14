@@ -4,9 +4,10 @@ export const templateIds = [
   "bulletin",
   "editorial",
   "paper",
+  "opener",
 ] as const;
 export type TemplateId = (typeof templateIds)[number];
-export const pageMasterIds = ["article", "paper"] as const;
+export const pageMasterIds = ["article", "paper", "opener"] as const;
 export type PageMasterId = (typeof pageMasterIds)[number];
 export const themeIds = [
   "ecu-light",

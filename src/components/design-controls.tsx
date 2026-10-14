@@ -162,11 +162,19 @@ export function StoryDesignControls({
               }
             >
               <option value="inherit">Inherit layout</option>
-              {pageMasterIds.map((id) => (
-                <option value={id} key={id}>
-                  {id === "article" ? "Plain article" : "Inset paper panel"}
-                </option>
-              ))}
+              {pageMasterIds
+                .filter(
+                  (id) => key !== "continuationTemplate" || id !== "opener",
+                )
+                .map((id) => (
+                  <option value={id} key={id}>
+                    {id === "article"
+                      ? "Plain article"
+                      : id === "paper"
+                        ? "Inset paper panel"
+                        : "T03 · Photographic opener"}
+                  </option>
+                ))}
             </select>
           </label>
         ))}

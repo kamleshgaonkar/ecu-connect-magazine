@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { templateIds, pageMasterIds, themeIds } from "./design";
-import { mediaReferenceSchema } from "./media";
+import { mediaReferenceSchema, renderAssetSchema } from "./media";
 
 export const sectionNames = [
   "Cover Story",
@@ -23,6 +23,18 @@ export const issueSchema = z
   .object({
     schemaVersion: z.literal(2).default(2),
     theme: z.enum(themeIds).default("ecu-light"),
+    cover: z
+      .object({
+        headline: z.string().max(200).default(""),
+        supportingText: z.string().max(500).default(""),
+        edition: z.string().max(50).default("FORTNIGHTLY EDITION"),
+        image: mediaReferenceSchema.optional(),
+        logo: mediaReferenceSchema.optional(),
+        surface: z.enum(["white", "sky", "blue"]).default("white"),
+      })
+      .strict()
+      .optional(),
+    renderAssets: z.array(renderAssetSchema).max(100).optional(),
     furniture: z
       .object({
         header: z.boolean().default(true),
@@ -63,6 +75,21 @@ export const issueSchema = z
                       .default("inherit"),
                     theme: z.enum(["inherit", ...themeIds]).default("inherit"),
                     media: z.array(mediaReferenceSchema).max(30).default([]),
+                    visual: z
+                      .object({
+                        summary: z.string().max(1000).default(""),
+                        thumbnailShape: z
+                          .enum(["landscape", "portrait", "square"])
+                          .optional(),
+                        hero: mediaReferenceSchema.optional(),
+                        thumbnail: mediaReferenceSchema.optional(),
+                        position: z
+                          .enum(["below", "left", "right"])
+                          .default("below"),
+                        heroLayout: z.enum(["large", "full"]).default("large"),
+                      })
+                      .strict()
+                      .optional(),
                     id: z.string().min(1).max(100),
                     title: z.string().trim().min(1).max(200),
                     subtitle: z.string().max(500),

@@ -176,9 +176,7 @@ test("unsupported future data and unresolved media fail export explicitly", asyn
   ];
   const media = await request.post("/api/export", { data: issue });
   expect(media.status()).toBe(422);
-  expect((await media.json()).error).toContain(
-    "Media placement is not implemented",
-  );
+  expect((await media.json()).error).toContain("Missing local image");
   const future = await request.post("/api/export", {
     data: { ...issue, schemaVersion: 3 },
   });

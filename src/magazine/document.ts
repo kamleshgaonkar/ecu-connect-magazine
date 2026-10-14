@@ -4,6 +4,8 @@ import { createPageMaster, createCoverMaster } from "./page-masters";
 import { printedFolio } from "./folios";
 import { renderMagazine } from "./pagination";
 import { designTokens } from "./tokens";
+import { magazineFontStyles } from "./fonts";
+import { createMediaImage } from "./media-image";
 import { magazineStyles } from "./styles";
 export { magazineStyles } from "./styles";
 export function escapeHtml(value: string) {
@@ -29,10 +31,11 @@ export function magazineDocument(
   renderId = crypto.randomUUID(),
 ): string {
   const model = buildRenderModel(input);
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ECU Connect · Volume ${model.issue.volume}</title><style>${magazineStyles}</style></head><body><div class="pages" id="pages"></div><script>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ECU Connect · Volume ${model.issue.volume}</title><style>${magazineFontStyles}${magazineStyles}</style></head><body><div class="pages" id="pages"></div><script>
  const model=${serialize(model)};
+ const mediaImage=${createMediaImage.toString()};
  const masters={page:${createPageMaster.toString()},cover:${createCoverMaster.toString()}};
  const folioForPage=${printedFolio.toString()};
- (${renderMagazine.toString()})(model,masters,folioForPage,${designTokens.page.maxPages},${serialize(renderId)});
+ (${renderMagazine.toString()})(model,masters,mediaImage,folioForPage,${designTokens.page.maxPages},${serialize(renderId)});
  </script></body></html>`;
 }

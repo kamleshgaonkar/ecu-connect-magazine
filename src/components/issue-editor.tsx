@@ -15,6 +15,7 @@ import {
   Check,
 } from "lucide-react";
 import { Shell, Empty } from "./shell";
+import { CoverControls, StoryVisualControls } from "./visual-controls";
 import { Preview } from "./preview";
 import {
   IssueDesignControls,
@@ -259,6 +260,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                     Label this edition as sample / not approved
                   </label>
                   <IssueDesignControls issue={issue} onChange={update} />
+                  <CoverControls issue={issue} onChange={update} />
                   {issue.sample && (
                     <p className="sample-notice">
                       Volume 21 is fictional demonstration content. Replace and
@@ -582,6 +584,7 @@ function StoryEditor({
         </div>
       </div>
       <StoryDesignControls story={story} onChange={onChange} />
+      <StoryVisualControls story={story} onChange={onChange} />
       <label>
         Headline
         <input
