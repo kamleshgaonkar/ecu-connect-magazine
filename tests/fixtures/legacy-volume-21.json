@@ -1,0 +1,297 @@
+{
+  "id": "volume-21-sample",
+  "title": "Connections that move us",
+  "volume": 21,
+  "date": "October 2026",
+  "sample": true,
+  "updatedAt": "2026-10-01T12:00:00.000Z",
+  "sections": [
+    {
+      "id": "section-0",
+      "name": "Cover Story",
+      "enabled": true,
+      "template": "feature",
+      "stories": [
+        {
+          "id": "story-0",
+          "title": "Across oceans, closer together",
+          "subtitle": "A fictional editorial look at how a shipment connects people, places and possibilities. This demonstration story is not an ECU Worldwide announcement.",
+          "byline": "ECU Connect editorial · Demonstration copy",
+          "blocks": [
+            {
+              "id": "intro-0",
+              "type": "paragraph",
+              "text": "A fictional editorial look at how a shipment connects people, places and possibilities. This demonstration story is not an ECU Worldwide announcement."
+            },
+            {
+              "id": "heading-0",
+              "type": "heading",
+              "text": "Every connection has a story"
+            },
+            {
+              "id": "body-0",
+              "type": "paragraph",
+              "text": "Consider the journey from the perspective of the people involved. A clear update can help a colleague plan their day; a thoughtful question can reveal an opportunity to improve. For this sample edition, we explore those ordinary moments and the connections they create. Replace this text with reviewed reporting, supporting details and the voices of your contributors."
+            },
+            {
+              "id": "quote-0",
+              "type": "quote",
+              "text": "“Good stories begin with paying attention.” — Fictional editorial note"
+            },
+            {
+              "id": "list-0",
+              "type": "list",
+              "text": "Confirm the facts and attribution\nInclude a clear takeaway for readers\nReview the final pagination before export"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-1",
+      "name": "What's Up @ ECU Worldwide",
+      "enabled": true,
+      "template": "dispatch",
+      "stories": [
+        {
+          "id": "story-1",
+          "title": "Small moments. Shared connections.",
+          "subtitle": "An illustrative team roundup: a coffee conversation, a skills exchange and a volunteer afternoon. Names, events and activities have intentionally been left fictional.",
+          "byline": "ECU Connect editorial · Demonstration copy",
+          "blocks": [
+            {
+              "id": "intro-1",
+              "type": "paragraph",
+              "text": "An illustrative team roundup: a coffee conversation, a skills exchange and a volunteer afternoon. Names, events and activities have intentionally been left fictional."
+            },
+            {
+              "id": "heading-1",
+              "type": "heading",
+              "text": "Every connection has a story"
+            },
+            {
+              "id": "body-1",
+              "type": "paragraph",
+              "text": "Consider the journey from the perspective of the people involved. A clear update can help a colleague plan their day; a thoughtful question can reveal an opportunity to improve. For this sample edition, we explore those ordinary moments and the connections they create. Replace this text with reviewed reporting, supporting details and the voices of your contributors."
+            },
+            {
+              "id": "quote-1",
+              "type": "quote",
+              "text": "“Good stories begin with paying attention.” — Fictional editorial note"
+            },
+            {
+              "id": "list-1",
+              "type": "list",
+              "text": "Confirm the facts and attribution\nInclude a clear takeaway for readers\nReview the final pagination before export"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-2",
+      "name": "Notice Board",
+      "enabled": true,
+      "template": "bulletin",
+      "stories": [
+        {
+          "id": "story-2",
+          "title": "Your next issue starts here",
+          "subtitle": "An editorial checklist for contributors. Replace these demonstration notes with verified dates, contacts and approved submissions before publication.",
+          "byline": "ECU Connect editorial · Demonstration copy",
+          "blocks": [
+            {
+              "id": "intro-2",
+              "type": "paragraph",
+              "text": "An editorial checklist for contributors. Replace these demonstration notes with verified dates, contacts and approved submissions before publication."
+            },
+            {
+              "id": "heading-2",
+              "type": "heading",
+              "text": "Before you submit"
+            },
+            {
+              "id": "body-2",
+              "type": "paragraph",
+              "text": "Consider the journey from the perspective of the people involved. A clear update can help a colleague plan their day; a thoughtful question can reveal an opportunity to improve. For this sample edition, we explore those ordinary moments and the connections they create. Replace this text with reviewed reporting, supporting details and the voices of your contributors."
+            },
+            {
+              "id": "quote-2",
+              "type": "quote",
+              "text": "“Good stories begin with paying attention.” — Fictional editorial note"
+            },
+            {
+              "id": "list-2",
+              "type": "list",
+              "text": "Confirm the facts and attribution\nInclude a clear takeaway for readers\nReview the final pagination before export"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-3",
+      "name": "Special Feature",
+      "enabled": true,
+      "template": "feature",
+      "stories": [
+        {
+          "id": "story-3",
+          "title": "The people behind the journey",
+          "subtitle": "A sample feature about the daily craft of logistics: listening carefully, asking good questions and keeping a clear record of the next step.",
+          "byline": "ECU Connect editorial · Demonstration copy",
+          "blocks": [
+            {
+              "id": "intro-3",
+              "type": "paragraph",
+              "text": "A sample feature about the daily craft of logistics: listening carefully, asking good questions and keeping a clear record of the next step."
+            },
+            {
+              "id": "heading-3",
+              "type": "heading",
+              "text": "Every connection has a story"
+            },
+            {
+              "id": "body-3",
+              "type": "paragraph",
+              "text": "Consider the journey from the perspective of the people involved. A clear update can help a colleague plan their day; a thoughtful question can reveal an opportunity to improve. For this sample edition, we explore those ordinary moments and the connections they create. Replace this text with reviewed reporting, supporting details and the voices of your contributors."
+            },
+            {
+              "id": "quote-3",
+              "type": "quote",
+              "text": "“Good stories begin with paying attention.” — Fictional editorial note"
+            },
+            {
+              "id": "list-3",
+              "type": "list",
+              "text": "Confirm the facts and attribution\nInclude a clear takeaway for readers\nReview the final pagination before export"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-4",
+      "name": "New Office Announcement",
+      "enabled": true,
+      "template": "dispatch",
+      "stories": [
+        {
+          "id": "story-4",
+          "title": "A new space for new connections",
+          "subtitle": "A placeholder office profile. Add a verified location, opening date, team details and approved photography before using this template for an announcement.",
+          "byline": "ECU Connect editorial · Demonstration copy",
+          "blocks": [
+            {
+              "id": "intro-4",
+              "type": "paragraph",
+              "text": "A placeholder office profile. Add a verified location, opening date, team details and approved photography before using this template for an announcement."
+            },
+            {
+              "id": "heading-4",
+              "type": "heading",
+              "text": "Every connection has a story"
+            },
+            {
+              "id": "body-4",
+              "type": "paragraph",
+              "text": "Consider the journey from the perspective of the people involved. A clear update can help a colleague plan their day; a thoughtful question can reveal an opportunity to improve. For this sample edition, we explore those ordinary moments and the connections they create. Replace this text with reviewed reporting, supporting details and the voices of your contributors."
+            },
+            {
+              "id": "quote-4",
+              "type": "quote",
+              "text": "“Good stories begin with paying attention.” — Fictional editorial note"
+            },
+            {
+              "id": "list-4",
+              "type": "list",
+              "text": "Confirm the facts and attribution\nInclude a clear takeaway for readers\nReview the final pagination before export"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-5",
+      "name": "The ECU Worldwide Way",
+      "enabled": true,
+      "template": "dispatch",
+      "stories": [
+        {
+          "id": "story-5",
+          "title": "Care in every handover",
+          "subtitle": "An illustrative reflection on thoughtful handovers. This sample is not an official statement of company policy or values.",
+          "byline": "ECU Connect editorial · Demonstration copy",
+          "blocks": [
+            {
+              "id": "intro-5",
+              "type": "paragraph",
+              "text": "An illustrative reflection on thoughtful handovers. This sample is not an official statement of company policy or values."
+            },
+            {
+              "id": "heading-5",
+              "type": "heading",
+              "text": "Every connection has a story"
+            },
+            {
+              "id": "body-5",
+              "type": "paragraph",
+              "text": "Consider the journey from the perspective of the people involved. A clear update can help a colleague plan their day; a thoughtful question can reveal an opportunity to improve. For this sample edition, we explore those ordinary moments and the connections they create. Replace this text with reviewed reporting, supporting details and the voices of your contributors."
+            },
+            {
+              "id": "quote-5",
+              "type": "quote",
+              "text": "“Good stories begin with paying attention.” — Fictional editorial note"
+            },
+            {
+              "id": "list-5",
+              "type": "list",
+              "text": "Confirm the facts and attribution\nInclude a clear takeaway for readers\nReview the final pagination before export"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-6",
+      "name": "Holidays Around the World",
+      "enabled": true,
+      "template": "dispatch",
+      "stories": [
+        {
+          "id": "story-6",
+          "title": "A world of celebrations",
+          "subtitle": "A sample calendar feature exploring how colleagues might share cultural traditions. Confirm local observance dates and regional guidance before publication.",
+          "byline": "ECU Connect editorial · Demonstration copy",
+          "blocks": [
+            {
+              "id": "intro-6",
+              "type": "paragraph",
+              "text": "A sample calendar feature exploring how colleagues might share cultural traditions. Confirm local observance dates and regional guidance before publication."
+            },
+            {
+              "id": "heading-6",
+              "type": "heading",
+              "text": "Every connection has a story"
+            },
+            {
+              "id": "body-6",
+              "type": "paragraph",
+              "text": "Consider the journey from the perspective of the people involved. A clear update can help a colleague plan their day; a thoughtful question can reveal an opportunity to improve. For this sample edition, we explore those ordinary moments and the connections they create. Replace this text with reviewed reporting, supporting details and the voices of your contributors."
+            },
+            {
+              "id": "quote-6",
+              "type": "quote",
+              "text": "“Good stories begin with paying attention.” — Fictional editorial note"
+            },
+            {
+              "id": "list-6",
+              "type": "list",
+              "text": "Confirm the facts and attribution\nInclude a clear takeaway for readers\nReview the final pagination before export"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
