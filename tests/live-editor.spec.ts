@@ -183,7 +183,12 @@ test("story focus navigates to its actual measured page and excludes disabled st
   );
   await page.goto("/issues/" + issue.id);
   await expect(page.getByText("Layout checked.")).toBeVisible();
-  await page.getByLabel("Headline", { exact: true }).nth(1).focus();
+  await page
+    .getByRole("button", { name: "Second live story", exact: true })
+    .click();
+  await expect(page.getByLabel("Headline", { exact: true })).toHaveValue(
+    "Second live story",
+  );
   const frame = page.frameLocator("iframe");
   const physical = await frame
     .locator('[data-story-id="second-live-story"]')

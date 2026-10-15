@@ -1,6 +1,15 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Loader,
+  Minus,
+  Plus,
+} from "lucide-react";
 import type { Issue } from "../domain/issue";
 import type { LayoutResult } from "../magazine/pagination";
 import { mediaRepository } from "../media/local";
@@ -195,11 +204,17 @@ export function Preview({
     setZoomMode(value);
     send(undefined, value);
   }
+  const blocking = !!(
+    prepared?.error ||
+    tooLarge ||
+    (!updating && currentLayout?.warnings.length)
+  );
+  const reviewCount = (currentLayout?.notices.length ?? 0) + (issue.sample ? 1 : 0);
   return (
     <section className="preview-panel">
       <div className="preview-toolbar">
-        <div>
-          <h2>Magazine preview</h2>
+        <div className="preview-title">
+          <h2>Preview</h2>
           <p>
             A4 ·{" "}
             {currentLayout
@@ -212,79 +227,95 @@ export function Preview({
           disabled={busy || !ready}
           onClick={download}
         >
-          <Download size={16} />
+          <Download size={17} />
           {busy ? "Rendering PDF…" : "Export PDF"}
         </button>
       </div>
       <div className="preview-navigation" aria-label="Preview controls">
-        <button
-          className="icon-button"
-          aria-label="Previous page"
-          disabled={!currentLayout || position.page <= 1}
-          onClick={() => send(position.page - 1)}
-        >
-          ←
-        </button>
-        <label className="preview-page-label">
-          Page
-          <select
-            aria-label="Preview page"
-            value={Math.min(position.page, currentLayout?.pages ?? 1)}
-            disabled={!currentLayout}
-            onChange={(e) => send(Number(e.target.value))}
+        <div className="preview-group" role="group" aria-label="Pages">
+          <button
+            className="icon-button"
+            aria-label="Previous page"
+            disabled={!currentLayout || position.page <= 1}
+            onClick={() => send(position.page - 1)}
           >
-            {Array.from({ length: currentLayout?.pages ?? 1 }, (_, i) => (
-              <option key={i} value={i + 1}>
-                {i + 1}
-              </option>
-            ))}
-          </select>
-        </label>
-        <span className="preview-page-total">
-          / {currentLayout?.pages ?? "…"}
-        </span>
-        <button
-          className="icon-button"
-          aria-label="Next page"
-          disabled={!currentLayout || position.page >= currentLayout.pages}
-          onClick={() => send(position.page + 1)}
-        >
-          →
-        </button>
-        <button
-          className="icon-button"
-          aria-label="Zoom out"
-          disabled={!currentLayout || position.zoom <= 10}
-          onClick={() => zoom(Math.max(10, position.zoom - 10))}
-        >
-          −
-        </button>
-        <output aria-label="Preview zoom">{position.zoom}%</output>
-        <button
-          className="icon-button"
-          aria-label="Zoom in"
-          disabled={!currentLayout || position.zoom >= 200}
-          onClick={() => zoom(Math.min(200, position.zoom + 10))}
-        >
-          +
-        </button>
-        <button
-          className="button secondary fit-width"
-          aria-pressed={zoomMode === "fit"}
-          disabled={!currentLayout}
-          onClick={() => zoom("fit")}
-        >
-          Fit to width
-        </button>
+            <ChevronLeft size={18} />
+          </button>
+          <label className="preview-page-label">
+            Page
+            <select
+              aria-label="Preview page"
+              value={Math.min(position.page, currentLayout?.pages ?? 1)}
+              disabled={!currentLayout}
+              onChange={(e) => send(Number(e.target.value))}
+            >
+              {Array.from({ length: currentLayout?.pages ?? 1 }, (_, i) => (
+                <option key={i} value={i + 1}>
+                  {i + 1}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className="preview-page-total">
+            of {currentLayout?.pages ?? "…"}
+          </span>
+          <button
+            className="icon-button"
+            aria-label="Next page"
+            disabled={!currentLayout || position.page >= currentLayout.pages}
+            onClick={() => send(position.page + 1)}
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+        <div className="preview-group" role="group" aria-label="Zoom">
+          <button
+            className="icon-button"
+            aria-label="Zoom out"
+            disabled={!currentLayout || position.zoom <= 10}
+            onClick={() => zoom(Math.max(10, position.zoom - 10))}
+          >
+            <Minus size={18} />
+          </button>
+          <output aria-label="Preview zoom">{position.zoom}%</output>
+          <button
+            className="icon-button"
+            aria-label="Zoom in"
+            disabled={!currentLayout || position.zoom >= 200}
+            onClick={() => zoom(Math.min(200, position.zoom + 10))}
+          >
+            <Plus size={18} />
+          </button>
+          <button
+            className="button secondary fit-width"
+            aria-pressed={zoomMode === "fit"}
+            disabled={!currentLayout}
+            onClick={() => zoom("fit")}
+          >
+            Fit to width
+          </button>
+        </div>
       </div>
-      <div className="layout-status" role="status">
-        {prepared?.error
-          ? "Preview needs attention."
-          : updating
-            ? "Updating preview…"
-            : currentLayout?.warnings.length
-              ? currentLayout.warnings.map(friendlyPreviewMessage).join(" ")
-              : "Layout checked. Page numbers and contents are up to date."}
+      <div
+        className={"layout-status" + (blocking ? " blocking" : "")}
+        role="status"
+      >
+        {blocking ? (
+          <AlertTriangle size={16} aria-hidden="true" />
+        ) : updating ? (
+          <Loader size={16} aria-hidden="true" />
+        ) : (
+          <CheckCircle2 size={16} aria-hidden="true" />
+        )}
+        <span>
+          {prepared?.error
+            ? "Preview needs attention."
+            : updating
+              ? "Updating preview…"
+              : currentLayout?.warnings.length
+                ? currentLayout.warnings.map(friendlyPreviewMessage).join(" ")
+                : "Layout checked. Page numbers and contents are up to date."}
+        </span>
       </div>
       {prepared?.error && (
         <p className="error" role="alert">
@@ -306,10 +337,7 @@ export function Preview({
       )}
       <details className="preview-notices">
         <summary>
-          Review notes
-          {currentLayout?.notices.length
-            ? " (" + currentLayout.notices.length + ")"
-            : ""}
+          Review issues{reviewCount ? " (" + reviewCount + ")" : ""}
         </summary>
         {currentLayout?.notices.map((notice) => (
           <p key={notice} className="muted" role="note">

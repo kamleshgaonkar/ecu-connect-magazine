@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@theme inline {
+  --font-sans: var(--font-poppins);
+}
 :root {
   --ink: #111111;
   --muted: #737373;
@@ -14,7 +17,7 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-app);
   font-size: 14px;
 }
 button,
@@ -180,7 +183,7 @@ label input[type="checkbox"] {
   margin-bottom: 16px;
 }
 .sidebar-bottom p {
-  font-family: Georgia, serif;
+  font-family: inherit;
   font-size: 23px;
   color: #111111;
   line-height: 1.4;
@@ -278,7 +281,7 @@ label input[type="checkbox"] {
   margin-bottom: 31px;
 }
 h1 {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: inherit;
   font-weight: 400;
   letter-spacing: -1.6px;
   font-size: 46px;
@@ -377,7 +380,7 @@ h2 {
   display: inline-block;
   margin-left: 8px;
   background: #f5f5f5;
-  font-family: Arial;
+  font-family: inherit;
   font-size: 10px;
   padding: 3px 7px;
   border-radius: 4px;
@@ -437,7 +440,7 @@ h2 {
   z-index: 2;
 }
 .cover-masthead em {
-  font-family: Georgia;
+  font-family: inherit;
   font-weight: 400;
 }
 .cover-masthead > span {
@@ -492,7 +495,7 @@ h2 {
   left: 25px;
   bottom: 53px;
   right: 35px;
-  font-family: Georgia;
+  font-family: inherit;
   font-size: 35px;
   line-height: 1.02;
   letter-spacing: -1px;
@@ -620,7 +623,7 @@ h2 {
   margin-bottom: 10px;
 }
 .template-section h2 {
-  font-family: Georgia;
+  font-family: inherit;
   font-size: 27px;
   font-weight: 400;
   letter-spacing: -0.6px;
@@ -646,7 +649,7 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-family: Georgia;
+  font-family: inherit;
   color: #737373;
   font-size: 17px;
 }
@@ -690,7 +693,7 @@ h2 {
   box-shadow: 0 20px 80px #11111140;
 }
 .modal h2 {
-  font-family: Georgia;
+  font-family: inherit;
   font-size: 30px;
 }
 .modal p {
@@ -735,7 +738,7 @@ h2 {
   margin: 0 auto 15px;
 }
 .empty-state h3 {
-  font-family: Georgia;
+  font-family: inherit;
   font-size: 24px;
   font-weight: 400;
   color: #111111;
@@ -953,7 +956,7 @@ h2 {
   margin-bottom: 16px;
 }
 .story-editor > label:first-of-type input {
-  font-family: Georgia;
+  font-family: inherit;
   font-size: 22px;
 }
 .block-heading {
@@ -1002,7 +1005,7 @@ h2 {
   min-height: 80px;
 }
 .content-block textarea.heading-input {
-  font-family: Georgia;
+  font-family: inherit;
   font-size: 21px;
 }
 .content-block > small {

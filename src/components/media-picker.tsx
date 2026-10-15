@@ -106,83 +106,117 @@ export function MediaPicker({
     }
   }
   return (
-    <fieldset className="my-4 min-w-0 rounded-lg border border-[#E5E5E5] p-3">
-      <legend className="px-1 text-xs font-semibold">{label}</legend>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label>
-          {label} — choose image
-          <select
-            value={value?.assetId ?? ""}
-            onChange={(e) => select(e.target.value)}
-          >
-            <option value="">No image selected</option>
-            {value && !assets.some((a) => a.id === value.assetId) && (
-              <option value={value.assetId}>Missing image</option>
-            )}
-            {assets.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name} ({a.width} × {a.height})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Upload {label.toLowerCase()}
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            disabled={busy}
-            onChange={(e) => {
-              void upload(e.target.files?.[0]);
-              e.target.value = "";
-            }}
-          />
-        </label>
+    <fieldset className="media-picker">
+      <legend>{label}</legend>
+      <div className="media-picker-main">
+        <div className="media-picker-thumb">
+          {value && preview ? (
+            /* Local data URLs need neither Next image optimization nor network access. */
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={preview}
+              alt={value.alt}
+              style={{
+                objectFit: value.fit ?? "cover",
+                objectPosition: `${value.focalPoint.x * 100}% ${value.focalPoint.y * 100}%`,
+              }}
+            />
+          ) : (
+            <span>{value ? "Image unavailable" : "No image"}</span>
+          )}
+        </div>
+        <div className="media-picker-actions">
+          <label>
+            Choose an uploaded image
+            <select
+              aria-label={label + " — choose image"}
+              value={value?.assetId ?? ""}
+              onChange={(e) => select(e.target.value)}
+            >
+              <option value="">No image selected</option>
+              {value && !assets.some((a) => a.id === value.assetId) && (
+                <option value={value.assetId}>Missing image</option>
+              )}
+              {assets.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} ({a.width} × {a.height})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="button secondary upload-button">
+            {busy ? "Saving image…" : "Upload new image"}
+            <input
+              className="sr-only"
+              type="file"
+              aria-label={"Upload " + label.toLowerCase()}
+              accept="image/png,image/jpeg,image/webp"
+              disabled={busy}
+              onChange={(e) => {
+                void upload(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          <p className="helper">
+            PNG, JPEG or WebP up to 8 MB, saved in this browser. PDF exports
+            have a 1 MB total limit. Images are never resized automatically.
+          </p>
+        </div>
       </div>
-      <p className="muted mt-2">
-        Upload PNG, JPEG or WebP files up to 8 MB. Images are saved in this
-        browser. PDF exports have a 1 MB total limit, so choose smaller files
-        when needed. Your images are never resized automatically.
-      </p>
       {error && (
         <p role="alert" className="error">
           {error}
         </p>
       )}
-      {busy && <p role="status">Saving image…</p>}
+      {busy && (
+        <p role="status" className="sr-only">
+          Saving image…
+        </p>
+      )}
       {value && (
         <>
-          {preview ? (
-            <div className="mt-3 flex justify-center bg-[#F5F5F5]">
-              {/* Local data URLs need neither Next image optimization nor network access. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={preview}
-                alt={value.alt}
-                className="h-44 w-full max-w-sm"
-                style={{
-                  objectFit: value.fit ?? "cover",
-                  objectPosition: `${value.focalPoint.x * 100}% ${value.focalPoint.y * 100}%`,
-                }}
-              />
-            </div>
-          ) : (
+          {!preview && (
             <p className="error">
               Selected image is unavailable in this browser.
             </p>
           )}
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="media-picker-fields">
             <label>
-              {label} description
+              Caption
               <input
+                aria-label={label + " caption"}
+                value={value.caption}
+                maxLength={1000}
+                onChange={(e) =>
+                  onChange({ ...value, caption: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Credit
+              <input
+                aria-label={label + " credit"}
+                value={value.credit}
+                maxLength={300}
+                onChange={(e) => onChange({ ...value, credit: e.target.value })}
+              />
+            </label>
+            <label className="span-2">
+              Description for screen readers
+              <input
+                aria-label={label + " description"}
                 value={value.alt}
                 maxLength={500}
                 onChange={(e) => onChange({ ...value, alt: e.target.value })}
               />
             </label>
+          </div>
+          <div className="media-picker-fields framing">
             <label>
-              {label} fit
+              Fit
               <select
+                aria-label={label + " fit"}
                 value={value.fit ?? "cover"}
                 onChange={(e) =>
                   onChange({
@@ -197,10 +231,16 @@ export function MediaPicker({
             </label>
             {(["x", "y"] as const).map((axis) => (
               <label key={axis}>
-                {label} {axis === "x" ? "horizontal" : "vertical"} position (
-                {Math.round(value.focalPoint[axis] * 100)}%)
+                {axis === "x" ? "Horizontal" : "Vertical"} position ·{" "}
+                {Math.round(value.focalPoint[axis] * 100)}%
                 <input
                   type="range"
+                  aria-label={
+                    label +
+                    " " +
+                    (axis === "x" ? "horizontal" : "vertical") +
+                    " position"
+                  }
                   min={0}
                   max={100}
                   value={value.focalPoint[axis] * 100}
@@ -216,24 +256,6 @@ export function MediaPicker({
                 />
               </label>
             ))}
-            <label>
-              {label} caption
-              <input
-                value={value.caption}
-                maxLength={1000}
-                onChange={(e) =>
-                  onChange({ ...value, caption: e.target.value })
-                }
-              />
-            </label>
-            <label>
-              {label} credit
-              <input
-                value={value.credit}
-                maxLength={300}
-                onChange={(e) => onChange({ ...value, credit: e.target.value })}
-              />
-            </label>
           </div>
         </>
       )}

@@ -60,37 +60,46 @@ export function TemplateGallery() {
       <main className="templates-main">
         <div className="page-heading">
           <div>
-            <p className="studio-kicker">YOUR DESIGN LIBRARY</p>
             <h1>Page Templates</h1>
-            <p>Find the right layout for your next story.</p>
+            <p>
+              Original pages from published ECU Connect issues. Available
+              layouts can be applied to your stories; the rest are shown for
+              reference.
+            </p>
           </div>
           <Link href="/" className="button secondary">
             Back to Magazines
           </Link>
         </div>
-        <p className="gallery-explainer">
-          These thumbnails show the original published magazine pages. Available
-          layouts support the features listed below. Other layouts are for
-          reference only.
-        </p>
         <div className="gallery-toolbar">
           <div
             className="gallery-filters"
             role="group"
             aria-label="Filter layouts"
           >
-            {[
-              ["all", "All layouts"],
-              ["available", "Available"],
-              ["soon", "Coming soon"],
-            ].map(([value, label]) => (
+            {(
+              [
+                ["all", "All layouts", studioLayouts.length],
+                [
+                  "available",
+                  "Available",
+                  studioLayouts.filter((l) => l.action).length,
+                ],
+                [
+                  "soon",
+                  "Coming soon",
+                  studioLayouts.filter((l) => !l.action).length,
+                ],
+              ] as const
+            ).map(([value, label, count]) => (
               <button
-                className="button secondary"
+                className="filter-chip"
                 key={value}
                 aria-pressed={filter === value}
                 onClick={() => setFilter(value)}
               >
                 {label}
+                <span aria-hidden="true">{count}</span>
               </button>
             ))}
           </div>
@@ -112,7 +121,9 @@ export function TemplateGallery() {
         <div className="layout-gallery">
           {visible.map((layout) => (
             <article
-              className="layout-card"
+              className={
+                "layout-card " + (layout.action ? "is-available" : "is-soon")
+              }
               key={layout.id}
               data-layout={layout.id}
             >
@@ -148,7 +159,7 @@ export function TemplateGallery() {
                     Use This Layout
                   </button>
                 ) : (
-                  <p className="layout-unavailable">Not available to use yet</p>
+                  <p className="layout-unavailable">Reference only for now</p>
                 )}
               </div>
             </article>
@@ -166,8 +177,19 @@ export function TemplateGallery() {
             >
               <X size={20} />
             </button>
-            <h2 id="create-heading">Use {chosen.name}</h2>
-            <p>{chosen.note}</p>
+            <div className="chosen-layout">
+              <Image
+                src={"/template-thumbnails/" + chosen.id + ".webp"}
+                width={120}
+                height={170}
+                alt=""
+                unoptimized
+              />
+              <div>
+                <h2 id="create-heading">Use {chosen.name}</h2>
+                <p>{chosen.note}</p>
+              </div>
+            </div>
             {loading ? (
               <p>Loading your magazines…</p>
             ) : !issues.length ? (

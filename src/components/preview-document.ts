@@ -105,3 +105,28 @@ export function withPreviewControls(html: string, renderId: string) {
       ");</script></body>",
   );
 }
+
+/** Dashboard-only presentation of the real cover; never included in exports.
+ * Wait for the renderer to finish measuring before applying thumbnail scaling.
+ */
+export function coverThumbnailController() {
+  function fit() {
+    if (!window.__magazineReady) { requestAnimationFrame(fit); return; }
+    const cover = document.querySelector<HTMLElement>(".page");
+    if (!cover) return;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.margin = "0";
+    const root = document.getElementById("pages")!;
+    root.style.padding = "0";
+    for (const page of Array.from(root.children)) {
+      if (page !== cover) (page as HTMLElement).style.display = "none";
+    }
+    cover.style.margin = "0";
+    cover.style.setProperty("zoom", String(window.innerWidth / ((210 * 96) / 25.4)));
+  }
+  window.addEventListener("resize", fit);
+  fit();
+}
+export function withCoverThumbnail(html: string) {
+  return html.replace("</body>", "<script>(" + coverThumbnailController.toString() + ")();</script></body>");
+}

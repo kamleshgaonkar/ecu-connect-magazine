@@ -18,11 +18,9 @@ export function CoverControls({
     onChange({ ...issue, cover: next });
   }
   return (
-    <details id="cover-design" className="mt-5 border-t border-[#E5E5E5] pt-4">
-      <summary className="cursor-pointer text-xs font-semibold">
-        Cover Design
-      </summary>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+    <details id="cover-design" className="disclosure">
+      <summary>Cover Design</summary>
+      <div className="disclosure-body grid gap-4 sm:grid-cols-2">
         <label>
           Cover headline
           <input
@@ -97,49 +95,15 @@ export function StoryVisualControls({
     onChange({ ...story, visual: next });
   }
   return (
-    <details
-      id={"story-images-" + story.id}
-      className="mb-5 border-b border-[#E5E5E5] pb-4"
-    >
-      <summary className="cursor-pointer text-xs font-semibold">
-        Contents & Story Images
-      </summary>
-      <label className="mt-4">
-        Contents summary
-        <textarea
-          value={visual.summary}
-          rows={2}
-          maxLength={1000}
-          onChange={(e) => change({ ...visual, summary: e.target.value })}
-        />
-      </label>
-      <label className="mt-3">
-        Contents image shape
-        <select
-          value={visual.thumbnailShape ?? "landscape"}
-          onChange={(e) =>
-            change({
-              ...visual,
-              thumbnailShape: e.target.value as
-                "landscape" | "portrait" | "square",
-            })
-          }
-        >
-          <option value="landscape">Landscape · Volumes 15 / 17 / 19</option>
-          <option value="portrait">Portrait · Volume 20</option>
-          <option value="square">Square</option>
-        </select>
-      </label>
-      <MediaPicker
-        label="Contents thumbnail"
-        value={visual.thumbnail}
-        onChange={(thumbnail) => change({ ...visual, thumbnail })}
-      />
-      <p className="muted">
-        Choose Photo opener in Story Design to use the opening photo. Only the
-        first included story in a section shows its large section number.
-      </p>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+    <details id={"story-images-" + story.id} className="disclosure">
+      <summary>Story Images & Contents</summary>
+      <div className="disclosure-body">
+        <h4 className="group-title">Opening photo</h4>
+        <p className="helper">
+          Shown when Story Layout is set to Photo opener. Only the first
+          included story in a section shows its large section number.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label>
           Opening text position
           <select
@@ -171,12 +135,48 @@ export function StoryVisualControls({
             <option value="full">Full-page photo with text</option>
           </select>
         </label>
+        </div>
+        <MediaPicker
+          label="Opening photo"
+          value={visual.hero}
+          onChange={(hero) => change({ ...visual, hero })}
+        />
+        <h4 className="group-title">Contents entry</h4>
+        <p className="helper">
+          How this story appears on the contents page.
+        </p>
+        <label className="mt-3">
+          Contents summary
+          <textarea
+            value={visual.summary}
+            rows={2}
+            maxLength={1000}
+            onChange={(e) => change({ ...visual, summary: e.target.value })}
+          />
+        </label>
+        <label className="mt-3">
+          Contents image shape
+          <select
+            value={visual.thumbnailShape ?? "landscape"}
+            onChange={(e) =>
+              change({
+                ...visual,
+                thumbnailShape: e.target.value as
+                  "landscape" | "portrait" | "square",
+              })
+            }
+          >
+            <option value="landscape">Landscape · Volumes 15 / 17 / 19</option>
+            <option value="portrait">Portrait · Volume 20</option>
+            <option value="square">Square</option>
+          </select>
+        </label>
+        <MediaPicker
+          label="Contents thumbnail"
+          value={visual.thumbnail}
+          onChange={(thumbnail) => change({ ...visual, thumbnail })}
+        />
       </div>
-      <MediaPicker
-        label="Opening photo"
-        value={visual.hero}
-        onChange={(hero) => change({ ...visual, hero })}
-      />
     </details>
   );
 }

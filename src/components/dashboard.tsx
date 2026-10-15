@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, ArrowUpRight, Search, FileText, X } from "lucide-react";
+import { Plus, ArrowUpRight, Search, X } from "lucide-react";
 import { Shell, Empty } from "./shell";
+import { CoverThumbnail } from "./cover-thumbnail";
 import { CreateDialog } from "./create-dialog";
 import { issueRepository } from "../repositories/issues";
 import { newIssue, wordCount, type Issue } from "../domain/issue";
@@ -43,29 +44,17 @@ export function Dashboard() {
       <main className="dashboard">
         <div className="page-heading">
           <div>
-            <p className="studio-kicker">MADE FOR YOUR NEXT EDITION</p>
             <h1>Magazines</h1>
-            <p>Your stories. Your layouts. Ready to share.</p>
+            <p>Open a draft to keep editing, or start a new edition.</p>
           </div>
           <button className="button primary" onClick={() => setCreating(true)}>
             <Plus size={18} />
             Create Magazine
           </button>
         </div>
-        <div className="studio-workflow" aria-label="Magazine workflow">
-          <span>Create Magazine</span>
-          <span aria-hidden="true">→</span>
-          <span>Add Stories</span>
-          <span aria-hidden="true">→</span>
-          <Link href="/templates">Choose Layout</Link>
-          <span aria-hidden="true">→</span>
-          <span>Review</span>
-          <span aria-hidden="true">→</span>
-          <span>Export PDF</span>
-        </div>
         <div className="list-toolbar">
           <h2>
-            Your magazines <span>{issues.length}</span>
+            All magazines <span>{issues.length}</span>
           </h2>
           <label className="search">
             <Search size={17} />
@@ -92,28 +81,29 @@ export function Dashboard() {
                 href={"/issues/" + issue.id}
                 key={issue.id}
               >
-                <div className="studio-draft-thumbnail" aria-hidden="true">
-                  <div className="studio-paper-icon">
-                    <FileText size={42} />
-                    <span>VOL. {issue.volume}</span>
-                  </div>
-                  <span>Continue your magazine</span>
+                <div className="volume-summary">
+                  <span className="studio-volume-label">VOLUME</span>
+                  <strong className="volume-number">{issue.volume}</strong>
+                  <span className="publication-date">{issue.date || "Date to be confirmed"}</span>
                 </div>
+                <div className="dashboard-cover"><CoverThumbnail issue={issue} /></div>
                 <div className="issue-card-info">
                   <div className="card-meta">
                     <span className="draft-badge">Draft</span>
-                    <span>Volume {issue.volume}</span>
+                    <span>Saved locally</span>
                   </div>
-                  <h3>{issue.title}</h3>
+                  <h3>{issue.cover?.headline || issue.title}</h3>
+                  {issue.cover?.headline && issue.cover.headline !== issue.title && <p>{issue.title}</p>}
                   <p>
                     {issue.sections.filter((section) => section.enabled).length}{" "}
                     sections · {wordCount(issue).toLocaleString()} words
-                    {issue.sample && (
-                      <span className="sample-label">Sample content</span>
-                    )}
                   </p>
+                  {issue.sample && (
+                    <p className="sample-label">Sample content</p>
+                  )}
                   <div className="card-footer">
                     <span>
+                      Updated{" "}
                       {new Date(issue.updatedAt).toLocaleDateString("en-GB", {
                         day: "numeric",
                         month: "short",
@@ -130,14 +120,10 @@ export function Dashboard() {
             ))}
             <button className="new-card" onClick={() => setCreating(true)}>
               <span>
-                <Plus size={25} />
+                <Plus size={24} />
               </span>
               <strong>Create Magazine</strong>
-              <p>
-                Start with a blank magazine.
-                <br />
-                Add your stories when you are ready.
-              </p>
+              <p>Start a blank edition and add stories next.</p>
             </button>
           </div>
         )}
@@ -146,13 +132,11 @@ export function Dashboard() {
         )}
         <section className="studio-template-prompt">
           <div>
-            <h2>A layout for every story</h2>
-            <p>
-              Explore the original magazine layouts and see what is available.
-            </p>
+            <h2>Page Templates</h2>
+            <p>Browse the approved magazine layouts and apply one to a story.</p>
           </div>
           <Link className="button secondary" href="/templates">
-            Explore Page Templates <ArrowUpRight size={16} />
+            Browse Page Templates <ArrowUpRight size={16} />
           </Link>
         </section>
         {creating && (

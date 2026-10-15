@@ -21,17 +21,21 @@ test("v1 editing migrates safely and saved theme/master selections drive preview
   await expect(
     page.getByLabel("Headline", { exact: true }).first(),
   ).toHaveValue(legacy.sections[0].stories[0].title);
+  await page.getByRole("button", { name: /^Magazine Details/ }).click();
   await page.getByText("Magazine Design", { exact: true }).click();
   await page
     .getByRole("combobox", { name: "Magazine background", exact: true })
     .selectOption("ecu-blue");
+  await page.locator(".outline-section").first().click();
   await page
     .getByRole("combobox", { name: "Background Style", exact: true })
     .selectOption("lavender");
   await page
     .getByRole("combobox", { name: "Page Layout", exact: true })
     .selectOption("paper");
+  await page.locator(".outline-story").first().click();
   await page.getByText("Story Design", { exact: true }).first().click();
+  await page.getByText("Advanced Layout", { exact: true }).first().click();
   await page
     .getByRole("combobox", { name: "Story Layout", exact: true })
     .first()
@@ -66,6 +70,7 @@ test("v1 editing migrates safely and saved theme/master selections drive preview
     legacy.sections[1].stories[0].blocks,
   );
   await page.getByText("Story Design", { exact: true }).first().click();
+  await page.getByText("Advanced Layout", { exact: true }).first().click();
   await expect(
     page
       .getByRole("combobox", { name: "Opening Page Layout", exact: true })
@@ -180,6 +185,7 @@ test("invalid unsaved details show a recoverable preview error without losing ed
 }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /Connections that move us/ }).click();
+  await page.getByRole("button", { name: /^Magazine Details/ }).click();
   await page.getByLabel("Magazine title", { exact: true }).fill("");
   await expect(
     page.getByRole("alert").filter({ hasText: "Add a magazine title" }),

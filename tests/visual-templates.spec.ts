@@ -49,6 +49,7 @@ test("local images and crop settings survive save/reload and export from the edi
 }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /Connections that move us/ }).click();
+  await page.getByRole("button", { name: /^Magazine Details/ }).click();
   await page.getByText("Cover Design", { exact: true }).click();
   await page
     .getByLabel("Upload cover photo", { exact: true })
@@ -59,10 +60,12 @@ test("local images and crop settings survive save/reload and export from the edi
   await page
     .getByRole("combobox", { name: "Cover photo fit", exact: true })
     .selectOption("contain");
-  await page.getByText("Contents & Story Images", { exact: true }).click();
   const imageId = await page
     .getByLabel("Cover photo — choose image")
     .inputValue();
+  await page.locator(".outline-section").first().click();
+  await page.locator(".outline-story").first().click();
+  await page.getByText("Story Images & Contents", { exact: true }).click();
   await page.getByLabel("Opening photo — choose image").selectOption(imageId);
   await page
     .getByLabel("Contents thumbnail — choose image")
@@ -70,7 +73,7 @@ test("local images and crop settings survive save/reload and export from the edi
   await page
     .getByLabel("Contents summary", { exact: true })
     .fill("Saved contents summary");
-  await page.getByText("Story Design", { exact: true }).click();
+  await page.getByText("Advanced Layout", { exact: true }).click();
   await page
     .getByRole("combobox", { name: "Opening Page Layout", exact: true })
     .selectOption("opener");
@@ -109,7 +112,7 @@ test("local images and crop settings survive save/reload and export from the edi
     "src",
     /^data:image/,
   );
-  await page.getByText(/^Review notes/).click();
+  await page.getByText(/^Review issues/).click();
   await expect(page.getByText(/may look soft in print/).first()).toBeVisible();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export PDF", exact: true }).click();
@@ -264,6 +267,7 @@ test("new editor image controls remain usable on mobile and unsupported uploads 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.getByRole("link", { name: /Connections that move us/ }).click();
+  await page.getByRole("button", { name: /^Magazine Details/ }).click();
   await page.getByText("Cover Design", { exact: true }).click();
   await page.getByLabel("Upload cover photo", { exact: true }).setInputFiles({
     name: "unsupported.svg",
@@ -285,6 +289,7 @@ test("large local uploads remain previewable but the unchanged PDF request cap i
 }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /Connections that move us/ }).click();
+  await page.getByRole("button", { name: /^Magazine Details/ }).click();
   await page.getByText("Cover Design", { exact: true }).click();
   const dataUrl = await page.evaluate(() => {
     const canvas = document.createElement("canvas");

@@ -1,5 +1,5 @@
 "use client";
-import type { Issue, Section, Story } from "../domain/issue";
+import type { Block, Issue, Section, Story } from "../domain/issue";
 import { themeIds, themeLabels, pageMasterIds } from "../domain/design";
 import { layoutNames } from "../studio/layout-catalog";
 function ThemeSelect({
@@ -35,11 +35,9 @@ export function IssueDesignControls({
   onChange: (issue: Issue) => void;
 }) {
   return (
-    <details className="mt-5 border-t border-[#E5E5E5] pt-4">
-      <summary className="cursor-pointer text-xs font-semibold">
-        Magazine Design
-      </summary>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+    <details className="disclosure">
+      <summary>Magazine Design</summary>
+      <div className="disclosure-body grid gap-4 sm:grid-cols-2">
         <ThemeSelect
           label="Magazine background"
           value={issue.theme}
@@ -47,10 +45,10 @@ export function IssueDesignControls({
             onChange({ ...issue, theme: theme as Issue["theme"] })
           }
         />
-        <div className="text-xs leading-relaxed text-[#111111]">
+        <p className="helper">
           A4 pages. Page numbering begins after the contents. The cover and
           contents are not numbered.
-        </div>
+        </p>
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {(
@@ -87,16 +85,14 @@ export function SectionDesignControls({
   onChange: (section: Section) => void;
 }) {
   return (
-    <div className="mt-4">
-      <ThemeSelect
-        label="Background Style"
-        inherit
-        value={section.theme}
-        onChange={(theme) =>
-          onChange({ ...section, theme: theme as Section["theme"] })
-        }
-      />
-    </div>
+    <ThemeSelect
+      label="Background Style"
+      inherit
+      value={section.theme}
+      onChange={(theme) =>
+        onChange({ ...section, theme: theme as Section["theme"] })
+      }
+    />
   );
 }
 export function StoryDesignControls({
@@ -107,19 +103,9 @@ export function StoryDesignControls({
   onChange: (story: Story) => void;
 }) {
   return (
-    <details className="mb-5 border-b border-[#E5E5E5] pb-4">
-      <summary className="cursor-pointer text-xs font-semibold">
-        Story Design
-      </summary>
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          checked={story.enabled}
-          onChange={(e) => onChange({ ...story, enabled: e.target.checked })}
-        />
-        Include this story in preview and PDF
-      </label>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+    <details className="disclosure">
+      <summary>Story Design</summary>
+      <div className="disclosure-body grid gap-4 sm:grid-cols-2">
         <label>
           Story Layout
           <select
@@ -147,6 +133,21 @@ export function StoryDesignControls({
             onChange({ ...story, theme: theme as Story["theme"] })
           }
         />
+      </div>
+    </details>
+  );
+}
+export function StoryAdvancedLayout({
+  story,
+  onChange,
+}: {
+  story: Story;
+  onChange: (story: Story) => void;
+}) {
+  return (
+    <details className="disclosure">
+      <summary>Advanced Layout</summary>
+      <div className="disclosure-body grid gap-4 sm:grid-cols-2">
         {(["pageTemplate", "continuationTemplate"] as const).map((key) => (
           <label key={key}>
             {key === "pageTemplate"
@@ -180,8 +181,6 @@ export function StoryDesignControls({
             </select>
           </label>
         ))}
-      </div>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label>
           Article Columns
           <select
@@ -216,12 +215,52 @@ export function StoryDesignControls({
           />
           Show opening headline, introduction and author
         </label>
-        <p className="text-xs">
-          Your column choice continues onto the next page. Use block breaks to
-          start a new column or page. Tables spanning both columns are not
-          available yet.
-        </p>
       </div>
+      <p className="helper">
+        Your column choice continues onto the next page. Use block breaks to
+        start a new column or page. Tables spanning both columns are not
+        available yet.
+      </p>
+      {story.blocks.length > 0 && (
+        <div className="block-breaks">
+          <h4>Content block breaks</h4>
+          {story.blocks.map((block, i) => (
+            <div className="block-break" key={block.id}>
+              <label htmlFor={"break-" + block.id}>
+                Block {i + 1} break before
+              </label>
+              <span className="helper" id={"break-hint-" + block.id}>
+                {block.type === "figure"
+                  ? "Image"
+                  : block.text.trim().slice(0, 60) || "Empty block"}
+              </span>
+              <select
+                id={"break-" + block.id}
+                aria-describedby={"break-hint-" + block.id}
+                value={block.breakBefore ?? "auto"}
+                onChange={(e) =>
+                  onChange({
+                    ...story,
+                    blocks: story.blocks.map((b) =>
+                      b.id === block.id
+                        ? {
+                            ...b,
+                            breakBefore: e.target
+                              .value as Block["breakBefore"],
+                          }
+                        : b,
+                    ),
+                  })
+                }
+              >
+                <option value="auto">Automatic</option>
+                <option value="column">Next column</option>
+                <option value="page">Next page</option>
+              </select>
+            </div>
+          ))}
+        </div>
+      )}
     </details>
   );
 }

@@ -54,10 +54,15 @@ export function Shell({
       <div className="main-wrap">
         <header className="topbar">
           <span>
-            ECU Connect <span className="topbar-divider">/</span> Magazine
-            Builder
+            ECU Connect <span className="topbar-divider">/</span>{" "}
+            <b>
+              {pathname.startsWith("/templates")
+                ? "Page Templates"
+                : pathname.startsWith("/issues")
+                  ? "Magazine Editor"
+                  : "Magazines"}
+            </b>
           </span>
-          <span className="studio-top-label">Your magazines, in one place</span>
         </header>
         {children}
       </div>

@@ -9,9 +9,13 @@ import {
   Pencil,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
   Trash2,
   FileText,
   Check,
+  Bold,
+  Italic,
+  BookOpen,
 } from "lucide-react";
 import { Shell, Empty } from "./shell";
 import { CoverControls, StoryVisualControls } from "./visual-controls";
@@ -23,6 +27,7 @@ import {
   IssueDesignControls,
   SectionDesignControls,
   StoryDesignControls,
+  StoryAdvancedLayout,
 } from "./design-controls";
 import { layoutNames, layoutDescriptions } from "../studio/layout-catalog";
 import { issueRepository } from "../repositories/issues";
@@ -37,6 +42,27 @@ import {
   type Story,
   type Block,
 } from "../domain/issue";
+type View =
+  | { kind: "details" }
+  | { kind: "section"; sectionId: string }
+  | { kind: "story"; sectionId: string; storyId: string };
+function initialView(issue: Issue | null, sectionId?: string, storyId?: string) {
+  const section =
+    issue?.sections.find((s) => s.id === sectionId) ?? issue?.sections[0];
+  if (!section) return { kind: "details" } as View;
+  const story =
+    section.stories.find((s) => s.id === storyId) ??
+    (storyId ? undefined : section.stories[0]);
+  return story
+    ? ({ kind: "story", sectionId: section.id, storyId: story.id } as View)
+    : ({ kind: "section", sectionId: section.id } as View);
+}
+function words(story: Story) {
+  return story.blocks.reduce(
+    (n, b) => n + (b.text.match(/\S+/g)?.length ?? 0),
+    0,
+  );
+}
 export function IssueEditor({ issueId }: { issueId: string }) {
   const router = useRouter();
   const [issue, setIssue] = useState<Issue | null>(null),
@@ -50,25 +76,39 @@ export function IssueEditor({ issueId }: { issueId: string }) {
     [dirty, setDirty] = useState(false),
     [saving, setSaving] = useState(false),
     [activeStory, setActiveStory] = useState<string | undefined>(undefined),
-    [selected, setSelected] = useState(""),
+    [view, setView] = useState<View>({ kind: "details" }),
     [sectionType, setSectionType] = useState<string>(sectionNames[0]);
   useEffect(() => {
+    let active = true;
+    const params = new URLSearchParams(window.location.search);
     issueRepository
       .get(issueId)
       .then((data) => {
-        const params = new URLSearchParams(window.location.search);
+        if (!active) return;
         const action = params.get("layout");
         const request =
           data && action
             ? applyStudioLayout(data, action, params.get("story") ?? undefined)
             : null;
-        setIssue(request?.issue ?? data);
-        setSelected(request?.sectionId ?? data?.sections[0]?.id ?? "");
+        const loaded = request?.issue ?? data;
+        setIssue(loaded);
+        const start =
+          request?.target === "cover-design"
+            ? ({ kind: "details" } as View)
+            : initialView(loaded, request?.sectionId, request?.storyId);
+        setView(start);
+        if (start.kind === "story") {
+          const section = loaded?.sections.find(
+            (s) => s.id === start.sectionId,
+          );
+          const story = section?.stories.find((s) => s.id === start.storyId);
+          if (section?.enabled && story?.enabled) setActiveStory(story.id);
+        }
         if (request) {
           if (request.error) setError(request.error);
           if (request.notice) setLayoutNotice(request.notice);
           setRequestedPanel(request.target);
-          setActiveStory(request.storyId);
+          if (request.storyId) setActiveStory(request.storyId);
           if (request.dirty) {
             setDirty(true);
             setStatus("Unsaved changes");
@@ -83,8 +123,15 @@ export function IssueEditor({ issueId }: { issueId: string }) {
           );
         }
       })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        if (active) setError(e.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [issueId]);
   useEffect(() => {
     function warn(e: BeforeUnloadEvent) {
@@ -147,7 +194,24 @@ export function IssueEditor({ issueId }: { issueId: string }) {
       stories: [],
     };
     update({ ...issue, sections: [...issue.sections, s] });
-    setSelected(s.id);
+    setView({ kind: "section", sectionId: s.id });
+  }
+  function addStory(target: Section) {
+    const story = newStory();
+    changeSection({ ...target, stories: [...target.stories, story] });
+    openStory(target, story);
+  }
+  function openSection(target: Section) {
+    setView({ kind: "section", sectionId: target.id });
+    setActiveStory(
+      target.enabled
+        ? target.stories.find((story) => story.enabled)?.id
+        : undefined,
+    );
+  }
+  function openStory(target: Section, story: Story) {
+    setView({ kind: "story", sectionId: target.id, storyId: story.id });
+    setActiveStory(story.enabled && target.enabled ? story.id : undefined);
   }
   async function removeIssue() {
     if (
@@ -164,7 +228,15 @@ export function IssueEditor({ issueId }: { issueId: string }) {
       setError(e instanceof Error ? e.message : "Unable to delete issue");
     }
   }
-  const section = issue?.sections.find((s) => s.id === selected);
+  const section =
+    view.kind === "details"
+      ? undefined
+      : issue?.sections.find((s) => s.id === view.sectionId);
+  const story =
+    view.kind === "story"
+      ? section?.stories.find((s) => s.id === view.storyId)
+      : undefined;
+  const storyIndex = story && section ? section.stories.indexOf(story) : -1;
   return (
     <Shell
       onNavigate={(event) => {
@@ -173,16 +245,6 @@ export function IssueEditor({ issueId }: { issueId: string }) {
       }}
     >
       <main className="editor-main live-editor-main">
-        <Link
-          href="/"
-          className="back-link"
-          onClick={(e) => {
-            if (dirty && !window.confirm("Leave without saving your changes?"))
-              e.preventDefault();
-          }}
-        >
-          <ArrowLeft size={15} /> All Magazines
-        </Link>
         {loading ? (
           <Empty>Loading magazine…</Empty>
         ) : !issue ? (
@@ -192,14 +254,26 @@ export function IssueEditor({ issueId }: { issueId: string }) {
         ) : (
           <>
             <div className="page-heading editor-heading">
-              <div>
-                <div className="eyebrow">
-                  VOLUME {issue.volume}{" "}
-                  <span className="draft-badge">DRAFT</span>
-                </div>
+              <div className="editor-title">
+                <Link
+                  href="/"
+                  className="back-link"
+                  onClick={(e) => {
+                    if (
+                      dirty &&
+                      !window.confirm("Leave without saving your changes?")
+                    )
+                      e.preventDefault();
+                  }}
+                >
+                  <ArrowLeft size={16} /> All Magazines
+                </Link>
                 <h1>{issue.title}</h1>
                 <p className="save-status" role="status">
-                  {dirty ? <Pencil size={13} /> : <Check size={13} />} {status}{" "}
+                  <span className="draft-badge">
+                    Volume {issue.volume} · Draft
+                  </span>
+                  {dirty ? <Pencil size={14} /> : <Check size={14} />} {status}{" "}
                   · Stored in this browser
                 </p>
               </div>
@@ -209,7 +283,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                   onClick={save}
                   disabled={saving || !dirty}
                 >
-                  <Save size={16} />
+                  <Save size={17} />
                   {saving ? "Saving…" : "Save Magazine"}
                 </button>
                 <button
@@ -217,7 +291,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                   aria-label="Delete magazine"
                   onClick={removeIssue}
                 >
-                  <Trash2 size={17} />
+                  <Trash2 size={18} />
                 </button>
               </div>
             </div>
@@ -234,307 +308,381 @@ export function IssueEditor({ issueId }: { issueId: string }) {
             <SplitWorkspace
               preview={<Preview issue={issue} activeStoryId={activeStory} />}
             >
-              <div>
-                <div className="issue-settings panel">
-                  <h2>Magazine Details</h2>
-                  <div className="settings-grid">
-                    <label>
-                      Magazine title
-                      <input
-                        value={issue.title}
-                        maxLength={150}
-                        onChange={(e) =>
-                          update({ ...issue, title: e.target.value })
-                        }
-                      />
-                    </label>
-                    <label>
-                      Volume
-                      <input
-                        type="number"
-                        min={1}
-                        max={999}
-                        value={issue.volume}
-                        onChange={(e) =>
-                          update({ ...issue, volume: Number(e.target.value) })
-                        }
-                      />
-                    </label>
-                    <label>
-                      Publication date
-                      <input
-                        placeholder="e.g. October 2026"
-                        maxLength={50}
-                        value={issue.date}
-                        onChange={(e) =>
-                          update({ ...issue, date: e.target.value })
-                        }
-                      />
-                    </label>
+              <div className="editor-layout">
+                <nav className="editor-outline" aria-label="Magazine structure">
+                  <button
+                    className="outline-item outline-details"
+                    aria-current={view.kind === "details" ? "true" : undefined}
+                    onClick={() => setView({ kind: "details" })}
+                  >
+                    <BookOpen size={18} />
+                    <span>
+                      Magazine Details
+                      <small>Title, cover and design</small>
+                    </span>
+                  </button>
+                  <div className="outline-heading">
+                    <h2>Sections</h2>
+                    <span>{issue.sections.length}</span>
                   </div>
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={issue.sample}
-                      onChange={(e) =>
-                        update({ ...issue, sample: e.target.checked })
-                      }
-                    />{" "}
-                    Label this edition as sample / not approved
-                  </label>
-                  <IssueDesignControls issue={issue} onChange={update} />
-                  <CoverControls issue={issue} onChange={update} />
-                  {issue.sample && (
-                    <p className="sample-notice">
-                      Volume 21 is fictional demonstration content. Replace and
-                      verify it before publication.
+                  {issue.sections.length === 0 && (
+                    <p className="helper">
+                      Choose a section type below to start your edition.
                     </p>
                   )}
-                </div>
-                <div className="editor-grid">
-                  <aside className="section-list panel">
-                    <div className="panel-heading">
-                      <h2>Sections</h2>
-                      <span>{issue.sections.length}</span>
-                    </div>
-                    <p className="muted">
-                      Order sections below. Disabled sections are excluded from
-                      the magazine.
-                    </p>
-                    <ol>
-                      {issue.sections.map((s, index) => (
+                  <ol className="outline-sections">
+                    {issue.sections.map((s, index) => {
+                      const expanded = section?.id === s.id;
+                      return (
                         <li
                           key={s.id}
-                          className={s.id === selected ? "selected" : ""}
+                          className={expanded ? "expanded" : undefined}
                         >
-                          <button
-                            className="section-select"
-                            onClick={() => {
-                              setSelected(s.id);
-                              setActiveStory(
-                                s.enabled
-                                  ? s.stories.find((story) => story.enabled)?.id
-                                  : undefined,
-                              );
-                            }}
-                          >
-                            <span className="section-index">
-                              {String(index + 1).padStart(2, "0")}
-                            </span>
-                            <span>
-                              {s.name}
-                              <small>
-                                {s.stories.length}{" "}
-                                {s.stories.length === 1 ? "story" : "stories"} ·{" "}
-                                {s.enabled ? "Included" : "Hidden"}
-                              </small>
-                            </span>
-                          </button>
-                          <div className="section-order">
+                          <div className="outline-row">
                             <button
-                              className="icon-button"
-                              aria-label={`Move ${s.name} up`}
-                              disabled={index === 0}
-                              onClick={() =>
-                                update({
-                                  ...issue,
-                                  sections: move(issue.sections, index, -1),
-                                })
+                              className="outline-item outline-section"
+                              aria-expanded={expanded}
+                              aria-current={
+                                expanded && view.kind === "section"
+                                  ? "true"
+                                  : undefined
                               }
+                              onClick={() => openSection(s)}
                             >
-                              <ChevronUp size={14} />
-                            </button>
-                            <button
-                              className="icon-button"
-                              aria-label={`Move ${s.name} down`}
-                              disabled={index === issue.sections.length - 1}
-                              onClick={() =>
-                                update({
-                                  ...issue,
-                                  sections: move(issue.sections, index, 1),
-                                })
-                              }
-                            >
-                              <ChevronDown size={14} />
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                    <div className="add-section">
-                      <label>
-                        Section type
-                        <select
-                          value={sectionType}
-                          onChange={(e) => setSectionType(e.target.value)}
-                        >
-                          {sectionNames.map((n) => (
-                            <option key={n}>{n}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <button className="button secondary" onClick={addSection}>
-                        <Plus size={15} /> Add section
-                      </button>
-                    </div>
-                  </aside>
-                  <div className="section-content">
-                    {section ? (
-                      <>
-                        <section className="panel section-settings">
-                          <div className="panel-heading">
-                            <h2>Section Details</h2>
-                            <button
-                              className="icon-button"
-                              aria-label="Remove section"
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `Remove “${section.name}” and all its stories?`,
-                                  )
-                                ) {
-                                  const rest = issue.sections.filter(
-                                    (s) => s.id !== section.id,
-                                  );
-                                  update({ ...issue, sections: rest });
-                                  setSelected(rest[0]?.id ?? "");
-                                }
-                              }}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                          <div className="section-fields">
-                            <label>
-                              Section name
-                              <input
-                                value={section.name}
-                                maxLength={150}
-                                onChange={(e) =>
-                                  changeSection({
-                                    ...section,
-                                    name: e.target.value,
-                                  })
-                                }
+                              <ChevronRight
+                                size={16}
+                                className="outline-chevron"
                               />
-                            </label>
-                            <label>
-                              Page Layout
-                              <select
-                                value={section.template}
-                                onChange={(e) =>
-                                  changeSection({
-                                    ...section,
-                                    template: e.target
-                                      .value as Section["template"],
+                              <span>
+                                {s.name || "Untitled section"}
+                                <small>
+                                  {s.stories.length}{" "}
+                                  {s.stories.length === 1 ? "story" : "stories"}
+                                  {s.enabled ? "" : " · Hidden"}
+                                </small>
+                              </span>
+                            </button>
+                            <div className="outline-order">
+                              <button
+                                className="icon-button"
+                                aria-label={`Move ${s.name} up`}
+                                disabled={index === 0}
+                                onClick={() =>
+                                  update({
+                                    ...issue,
+                                    sections: move(issue.sections, index, -1),
                                   })
                                 }
                               >
-                                {templates.map((t) => (
-                                  <option key={t} value={t}>
-                                    {layoutNames[t]}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
+                                <ChevronUp size={16} />
+                              </button>
+                              <button
+                                className="icon-button"
+                                aria-label={`Move ${s.name} down`}
+                                disabled={index === issue.sections.length - 1}
+                                onClick={() =>
+                                  update({
+                                    ...issue,
+                                    sections: move(issue.sections, index, 1),
+                                  })
+                                }
+                              >
+                                <ChevronDown size={16} />
+                              </button>
+                            </div>
                           </div>
-                          <SectionDesignControls
-                            section={section}
-                            onChange={changeSection}
+                          {expanded && (
+                            <ul
+                              className="outline-stories"
+                              aria-label={`Stories in ${s.name}`}
+                            >
+                              {s.stories.map((item) => (
+                                <li key={item.id}>
+                                  <button
+                                    className="outline-item outline-story"
+                                    aria-current={
+                                      story?.id === item.id ? "true" : undefined
+                                    }
+                                    onClick={() => openStory(s, item)}
+                                  >
+                                    <span>
+                                      {item.title || "Untitled story"}
+                                      {!item.enabled && <small>Hidden</small>}
+                                    </span>
+                                  </button>
+                                </li>
+                              ))}
+                              <li>
+                                <button
+                                  className="outline-add"
+                                  onClick={() => addStory(s)}
+                                >
+                                  <Plus size={16} /> Add story
+                                </button>
+                              </li>
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                  <div className="add-section">
+                    <label>
+                      New section type
+                      <select
+                        value={sectionType}
+                        onChange={(e) => setSectionType(e.target.value)}
+                      >
+                        {sectionNames.map((n) => (
+                          <option key={n}>{n}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <button className="button secondary" onClick={addSection}>
+                      <Plus size={16} /> Add section
+                    </button>
+                  </div>
+                </nav>
+                <div className="editor-detail">
+                  {view.kind === "details" ? (
+                    <section
+                      className="detail-panel"
+                      aria-labelledby="details-heading"
+                    >
+                      <h2 id="details-heading">Magazine Details</h2>
+                      <div className="settings-grid">
+                        <label>
+                          Magazine title
+                          <input
+                            value={issue.title}
+                            maxLength={150}
+                            onChange={(e) =>
+                              update({ ...issue, title: e.target.value })
+                            }
                           />
-                          <label className="checkbox-label">
-                            <input
-                              type="checkbox"
-                              checked={section.enabled}
-                              onChange={(e) =>
-                                changeSection({
-                                  ...section,
-                                  enabled: e.target.checked,
-                                })
-                              }
-                            />{" "}
-                            Include in this magazine
-                          </label>
-                          <p className="muted">
-                            {layoutDescriptions[section.template]}
-                          </p>
-                        </section>
-                        <div className="stories-heading">
-                          <h2>
-                            Stories <span>{section.stories.length}</span>
-                          </h2>
-                          <button
-                            className="button secondary"
-                            onClick={() =>
+                        </label>
+                        <label>
+                          Volume
+                          <input
+                            type="number"
+                            min={1}
+                            max={999}
+                            value={issue.volume}
+                            onChange={(e) =>
+                              update({
+                                ...issue,
+                                volume: Number(e.target.value),
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Publication date
+                          <input
+                            placeholder="e.g. October 2026"
+                            maxLength={50}
+                            value={issue.date}
+                            onChange={(e) =>
+                              update({ ...issue, date: e.target.value })
+                            }
+                          />
+                        </label>
+                      </div>
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={issue.sample}
+                          onChange={(e) =>
+                            update({ ...issue, sample: e.target.checked })
+                          }
+                        />{" "}
+                        Label this edition as sample / not approved
+                      </label>
+                      {issue.sample && (
+                        <p className="sample-notice">
+                          Volume 21 is fictional demonstration content. Replace
+                          and verify it before publication.
+                        </p>
+                      )}
+                      <CoverControls issue={issue} onChange={update} />
+                      <IssueDesignControls issue={issue} onChange={update} />
+                    </section>
+                  ) : view.kind === "story" && section && story ? (
+                    <StoryEditor
+                      key={story.id}
+                      story={story}
+                      sectionName={section.name}
+                      index={storyIndex}
+                      count={section.stories.length}
+                      onBack={() => openSection(section)}
+                      onChange={(next) => {
+                        changeSection({
+                          ...section,
+                          stories: section.stories.map((s) =>
+                            s.id === next.id ? next : s,
+                          ),
+                        });
+                        if (next.enabled !== story.enabled)
+                          setActiveStory(
+                            next.enabled && section.enabled
+                              ? next.id
+                              : undefined,
+                          );
+                      }}
+                      onMove={(d) =>
+                        changeSection({
+                          ...section,
+                          stories: move(section.stories, storyIndex, d),
+                        })
+                      }
+                      onRemove={() => {
+                        if (
+                          window.confirm("Remove this story and its content?")
+                        ) {
+                          changeSection({
+                            ...section,
+                            stories: section.stories.filter(
+                              (s) => s.id !== story.id,
+                            ),
+                          });
+                          setView({ kind: "section", sectionId: section.id });
+                        }
+                      }}
+                    />
+                  ) : section ? (
+                    <section
+                      className="detail-panel section-settings"
+                      aria-labelledby="section-heading"
+                    >
+                      <div className="detail-header">
+                        <div>
+                          <p className="detail-kicker">Section</p>
+                          <h2 id="section-heading">Section Details</h2>
+                        </div>
+                        <button
+                          className="icon-button"
+                          aria-label="Remove section"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Remove “${section.name}” and all its stories?`,
+                              )
+                            ) {
+                              const rest = issue.sections.filter(
+                                (s) => s.id !== section.id,
+                              );
+                              update({ ...issue, sections: rest });
+                              setView(
+                                rest[0]
+                                  ? { kind: "section", sectionId: rest[0].id }
+                                  : { kind: "details" },
+                              );
+                            }
+                          }}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                      <div className="section-fields">
+                        <label>
+                          Section name
+                          <input
+                            value={section.name}
+                            maxLength={150}
+                            onChange={(e) =>
                               changeSection({
                                 ...section,
-                                stories: [...section.stories, newStory()],
+                                name: e.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Page Layout
+                          <select
+                            value={section.template}
+                            onChange={(e) =>
+                              changeSection({
+                                ...section,
+                                template: e.target
+                                  .value as Section["template"],
                               })
                             }
                           >
-                            <Plus size={16} /> Add story
-                          </button>
-                        </div>
-                        {section.stories.length === 0 && (
+                            {templates.map((t) => (
+                              <option key={t} value={t}>
+                                {layoutNames[t]}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <SectionDesignControls
+                          section={section}
+                          onChange={changeSection}
+                        />
+                      </div>
+                      <p className="helper">
+                        {layoutDescriptions[section.template]}
+                      </p>
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={section.enabled}
+                          onChange={(e) =>
+                            changeSection({
+                              ...section,
+                              enabled: e.target.checked,
+                            })
+                          }
+                        />{" "}
+                        Include in this magazine
+                      </label>
+                      <div className="section-stories">
+                        <h3>
+                          Stories <span>{section.stories.length}</span>
+                        </h3>
+                        {section.stories.length === 0 ? (
                           <Empty>
-                            <FileText size={30} />
-                            <h3>This section is ready for a story</h3>
-                            <p>Add a story to start shaping the page.</p>
+                            <FileText size={28} />
+                            <p>
+                              This section is ready for a story. Use Add story
+                              in the list to start writing.
+                            </p>
                           </Empty>
+                        ) : (
+                          <ol>
+                            {section.stories.map((item, i) => (
+                              <li key={item.id}>
+                                <span className="section-story-index">
+                                  {String(i + 1).padStart(2, "0")}
+                                </span>
+                                <span className="section-story-title">
+                                  {item.title || "Untitled story"}
+                                  <small>
+                                    {words(item).toLocaleString()} words
+                                    {item.enabled ? "" : " · Hidden"}
+                                  </small>
+                                </span>
+                                <button
+                                  className="button secondary"
+                                  aria-label={`Edit ${item.title || "untitled story"}`}
+                                  onClick={() => openStory(section, item)}
+                                >
+                                  Edit
+                                </button>
+                              </li>
+                            ))}
+                          </ol>
                         )}
-                        {section.stories.map((story, index) => (
-                          <StoryEditor
-                            key={story.id}
-                            story={story}
-                            onSelect={() =>
-                              setActiveStory(
-                                story.enabled && section.enabled
-                                  ? story.id
-                                  : undefined,
-                              )
-                            }
-                            index={index}
-                            count={section.stories.length}
-                            onChange={(next) =>
-                              changeSection({
-                                ...section,
-                                stories: section.stories.map((s) =>
-                                  s.id === next.id ? next : s,
-                                ),
-                              })
-                            }
-                            onMove={(d) =>
-                              changeSection({
-                                ...section,
-                                stories: move(section.stories, index, d),
-                              })
-                            }
-                            onRemove={() => {
-                              if (
-                                window.confirm(
-                                  "Remove this story and its content?",
-                                )
-                              )
-                                changeSection({
-                                  ...section,
-                                  stories: section.stories.filter(
-                                    (s) => s.id !== story.id,
-                                  ),
-                                });
-                            }}
-                          />
-                        ))}
-                      </>
-                    ) : (
-                      <Empty>
-                        <LayersIcon />
-                        <h3>Build your edition, one section at a time</h3>
-                        <p>
-                          Select a section type and add it to your magazine.
-                        </p>
-                      </Empty>
-                    )}
-                  </div>
+                      </div>
+                    </section>
+                  ) : (
+                    <Empty>
+                      <FileText size={30} />
+                      <h3>Build your edition, one section at a time</h3>
+                      <p>Select a section type and add it to your magazine.</p>
+                    </Empty>
+                  )}
                 </div>
               </div>
             </SplitWorkspace>
@@ -544,25 +692,24 @@ export function IssueEditor({ issueId }: { issueId: string }) {
     </Shell>
   );
 }
-function LayersIcon() {
-  return <FileText size={32} />;
-}
 function StoryEditor({
   story,
+  sectionName,
   index,
   count,
   onChange,
   onMove,
   onRemove,
-  onSelect,
+  onBack,
 }: {
   story: Story;
+  sectionName: string;
   index: number;
   count: number;
   onChange: (s: Story) => void;
   onMove: (d: -1 | 1) => void;
   onRemove: () => void;
-  onSelect: () => void;
+  onBack: () => void;
 }) {
   const textareas = useRef<Record<string, HTMLTextAreaElement | null>>({});
   function format(block: Block, mark: string) {
@@ -595,14 +742,21 @@ function StoryEditor({
     });
   }
   return (
-    <section
-      className="story-editor panel"
+    <article
+      className="detail-panel story-editor"
       data-story-id={story.id}
-      onFocusCapture={onSelect}
-      onPointerDown={onSelect}
+      aria-label="Story editor"
     >
-      <div className="panel-heading">
-        <h3>Story {String(index + 1).padStart(2, "0")}</h3>
+      <div className="detail-header">
+        <nav className="breadcrumb" aria-label="Story location">
+          <button className="text-button" onClick={onBack}>
+            {sectionName || "Untitled section"}
+          </button>
+          <ChevronRight size={14} aria-hidden="true" />
+          <span>
+            Story {String(index + 1).padStart(2, "0")} of {count}
+          </span>
+        </nav>
         <div className="inline-actions">
           <button
             className="icon-button"
@@ -610,7 +764,7 @@ function StoryEditor({
             disabled={index === 0}
             onClick={() => onMove(-1)}
           >
-            <ChevronUp size={16} />
+            <ChevronUp size={18} />
           </button>
           <button
             className="icon-button"
@@ -618,215 +772,219 @@ function StoryEditor({
             disabled={index === count - 1}
             onClick={() => onMove(1)}
           >
-            <ChevronDown size={16} />
+            <ChevronDown size={18} />
           </button>
           <button
             className="icon-button"
             aria-label="Remove story"
             onClick={onRemove}
           >
-            <Trash2 size={16} />
+            <Trash2 size={18} />
           </button>
         </div>
       </div>
-      <StoryDesignControls story={story} onChange={onChange} />
-      <StoryVisualControls story={story} onChange={onChange} />
-      <label>
+      <label className="title-field">
         Headline
         <input
           value={story.title}
           maxLength={200}
+          placeholder="Story headline"
           onChange={(e) => onChange({ ...story, title: e.target.value })}
         />
       </label>
       <label>
         Introduction
         <textarea
-          rows={2}
+          rows={3}
           value={story.subtitle}
           maxLength={500}
+          placeholder="A short standfirst that introduces the story"
           onChange={(e) => onChange({ ...story, subtitle: e.target.value })}
         />
       </label>
-      <label>
-        Author
-        <input
-          value={story.byline}
-          maxLength={150}
-          placeholder="Author or editorial team"
-          onChange={(e) => onChange({ ...story, byline: e.target.value })}
-        />
-      </label>
-      <div className="block-heading">
-        <h4>Story content</h4>
-        <span>Structured blocks · bold & italic supported</span>
+      <div className="story-meta-row">
+        <label>
+          Author
+          <input
+            value={story.byline}
+            maxLength={150}
+            placeholder="Author or editorial team"
+            onChange={(e) => onChange({ ...story, byline: e.target.value })}
+          />
+        </label>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={story.enabled}
+            onChange={(e) => onChange({ ...story, enabled: e.target.checked })}
+          />
+          Include this story in preview and PDF
+        </label>
       </div>
-      {story.blocks.map((block, i) => (
-        <div className="content-block" key={block.id}>
-          <div className="block-toolbar">
-            <label>
-              <span className="sr-only">Block {i + 1} type</span>
-              <select
-                value={block.type}
-                onChange={(e) =>
-                  blockChange({
-                    ...block,
-                    type: e.target.value as Block["type"],
-                  })
-                }
-              >
-                <option value="paragraph">Paragraph</option>
-                <option value="heading">Heading</option>
-                <option value="quote">Pull quote</option>
-                <option value="list">Bullet list</option>
-                <option value="figure">Image</option>
-                <option value="callout">Callout</option>
-              </select>
-            </label>
-            <div className="inline-actions">
-              <button
-                className="icon-button"
-                aria-label={`Bold in block ${i + 1}`}
-                onClick={() => format(block, "**")}
-              >
-                <b>B</b>
-              </button>
-              <button
-                className="icon-button"
-                aria-label={`Italic in block ${i + 1}`}
-                onClick={() => format(block, "*")}
-              >
-                <em>I</em>
-              </button>
-              <button
-                className="icon-button"
-                aria-label={`Move block ${i + 1} up`}
-                disabled={i === 0}
-                onClick={() =>
-                  onChange({ ...story, blocks: move(story.blocks, i, -1) })
-                }
-              >
-                <ChevronUp size={14} />
-              </button>
-              <button
-                className="icon-button"
-                aria-label={`Move block ${i + 1} down`}
-                disabled={i === story.blocks.length - 1}
-                onClick={() =>
-                  onChange({ ...story, blocks: move(story.blocks, i, 1) })
-                }
-              >
-                <ChevronDown size={14} />
-              </button>
-              <button
-                className="icon-button"
-                aria-label={`Remove block ${i + 1}`}
-                onClick={() =>
-                  onChange({
-                    ...story,
-                    blocks: story.blocks.filter((b) => b.id !== block.id),
-                  })
-                }
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          </div>
-          <label>
-            Block {i + 1} break before
-            <select
-              value={block.breakBefore ?? "auto"}
-              onChange={(e) =>
-                blockChange({
-                  ...block,
-                  breakBefore: e.target.value as Block["breakBefore"],
-                })
-              }
-            >
-              <option value="auto">Automatic</option>
-              <option value="column">Next column</option>
-              <option value="page">Next page</option>
-            </select>
-          </label>
-          {block.type === "figure" && (
-            <>
-              <MediaPicker
-                label={`Image in block ${i + 1}`}
-                value={block.image}
-                onChange={(image) => blockChange({ ...block, image })}
-              />
+      <section className="story-content" aria-label="Story content">
+        <div className="block-heading">
+          <h3>Story content</h3>
+          <span>
+            {words(story).toLocaleString()} words · Select text, then use Bold
+            or Italic
+          </span>
+        </div>
+        {story.blocks.map((block, i) => (
+          <div className="content-block" key={block.id}>
+            <div className="block-toolbar">
               <label>
-                Image {i + 1} height (mm)
-                <input
-                  type="number"
-                  min={20}
-                  max={180}
-                  value={block.figureHeightMm ?? 100}
+                <span className="sr-only">Block {i + 1} type</span>
+                <select
+                  value={block.type}
                   onChange={(e) =>
                     blockChange({
                       ...block,
-                      figureHeightMm: Math.max(
-                        20,
-                        Math.min(180, Number(e.target.value)),
-                      ),
+                      type: e.target.value as Block["type"],
                     })
                   }
-                />
+                >
+                  <option value="paragraph">Paragraph</option>
+                  <option value="heading">Heading</option>
+                  <option value="quote">Pull quote</option>
+                  <option value="list">Bullet list</option>
+                  <option value="figure">Image</option>
+                  <option value="callout">Callout</option>
+                </select>
               </label>
-              <small>
-                Choose contain for charts and screenshots. Caption and credit
-                stay with the image. Block text below is an optional additional
-                figure caption.
-              </small>
-            </>
-          )}
-          <label>
-            <span className="sr-only">Block {i + 1} text</span>
-            <textarea
-              ref={(el) => {
-                textareas.current[block.id] = el;
-              }}
-              className={block.type === "heading" ? "heading-input" : ""}
-              rows={block.type === "paragraph" ? 5 : 3}
-              maxLength={20000}
-              placeholder={
-                block.type === "list"
-                  ? "One item per line…"
-                  : "Write your story…"
-              }
-              value={block.text}
-              onChange={(e) => blockChange({ ...block, text: e.target.value })}
-            />
-          </label>
-          {block.type === "list" && (
-            <small>Each line becomes a separate bullet.</small>
-          )}
+              <div className="inline-actions">
+                <button
+                  className="icon-button"
+                  aria-label={`Bold in block ${i + 1}`}
+                  title="Bold"
+                  onClick={() => format(block, "**")}
+                >
+                  <Bold size={17} />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label={`Italic in block ${i + 1}`}
+                  title="Italic"
+                  onClick={() => format(block, "*")}
+                >
+                  <Italic size={17} />
+                </button>
+                <span className="toolbar-divider" aria-hidden="true" />
+                <button
+                  className="icon-button"
+                  aria-label={`Move block ${i + 1} up`}
+                  disabled={i === 0}
+                  onClick={() =>
+                    onChange({ ...story, blocks: move(story.blocks, i, -1) })
+                  }
+                >
+                  <ChevronUp size={17} />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label={`Move block ${i + 1} down`}
+                  disabled={i === story.blocks.length - 1}
+                  onClick={() =>
+                    onChange({ ...story, blocks: move(story.blocks, i, 1) })
+                  }
+                >
+                  <ChevronDown size={17} />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label={`Remove block ${i + 1}`}
+                  onClick={() =>
+                    onChange({
+                      ...story,
+                      blocks: story.blocks.filter((b) => b.id !== block.id),
+                    })
+                  }
+                >
+                  <Trash2 size={17} />
+                </button>
+              </div>
+            </div>
+            {block.type === "figure" && (
+              <div className="figure-fields">
+                <MediaPicker
+                  label={`Image in block ${i + 1}`}
+                  value={block.image}
+                  onChange={(image) => blockChange({ ...block, image })}
+                />
+                <label>
+                  Image {i + 1} height (mm)
+                  <input
+                    type="number"
+                    min={20}
+                    max={180}
+                    value={block.figureHeightMm ?? 100}
+                    onChange={(e) =>
+                      blockChange({
+                        ...block,
+                        figureHeightMm: Math.max(
+                          20,
+                          Math.min(180, Number(e.target.value)),
+                        ),
+                      })
+                    }
+                  />
+                </label>
+                <p className="helper">
+                  Choose “Show complete image” for charts and screenshots.
+                  Caption and credit stay with the image. Text below is an
+                  optional additional caption.
+                </p>
+              </div>
+            )}
+            <label>
+              <span className="sr-only">Block {i + 1} text</span>
+              <textarea
+                ref={(el) => {
+                  textareas.current[block.id] = el;
+                }}
+                className={block.type === "heading" ? "heading-input" : ""}
+                rows={block.type === "paragraph" ? 6 : 3}
+                maxLength={20000}
+                placeholder={
+                  block.type === "list"
+                    ? "One item per line…"
+                    : block.type === "figure"
+                      ? "Optional additional caption…"
+                      : "Write your story…"
+                }
+                value={block.text}
+                onChange={(e) =>
+                  blockChange({ ...block, text: e.target.value })
+                }
+              />
+            </label>
+            {block.type === "list" && (
+              <small>Each line becomes a separate bullet.</small>
+            )}
+          </div>
+        ))}
+        <div className="block-add">
+          <button
+            className="button secondary"
+            disabled={story.blocks.length >= 100}
+            onClick={() =>
+              onChange({
+                ...story,
+                blocks: [
+                  ...story.blocks,
+                  { id: id(), type: "paragraph", text: "" },
+                ],
+              })
+            }
+          >
+            <Plus size={16} /> Add content block
+          </button>
         </div>
-      ))}
-      <div className="block-add">
-        <button
-          className="button secondary"
-          disabled={story.blocks.length >= 100}
-          onClick={() =>
-            onChange({
-              ...story,
-              blocks: [
-                ...story.blocks,
-                { id: id(), type: "paragraph", text: "" },
-              ],
-            })
-          }
-        >
-          <Plus size={15} /> Add content block
-        </button>
-        <span>
-          {story.blocks.reduce(
-            (n, b) => n + (b.text.match(/\S+/g)?.length ?? 0),
-            0,
-          )}{" "}
-          words
-        </span>
+      </section>
+      <div className="story-options">
+        <StoryVisualControls story={story} onChange={onChange} />
+        <StoryDesignControls story={story} onChange={onChange} />
+        <StoryAdvancedLayout story={story} onChange={onChange} />
       </div>
-    </section>
+    </article>
   );
 }

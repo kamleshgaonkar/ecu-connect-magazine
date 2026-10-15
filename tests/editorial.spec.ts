@@ -161,14 +161,14 @@ test("T04 editor controls persist without losing ordered blocks", async ({
       localStorage.setItem("ecu-connect:issues:v1", JSON.stringify([data]));
   }, issue);
   await page.goto(`/issues/${issue.id}`);
-  await page.getByText("Story Design", { exact: true }).click();
+  await page.getByText("Advanced Layout", { exact: true }).click();
   await page.getByLabel("Article Columns").selectOption("2");
   await page.getByLabel("Block 2 break before").selectOption("column");
   await page
     .getByRole("button", { name: "Save Magazine", exact: true })
     .click();
   await page.reload();
-  await page.getByText("Story Design", { exact: true }).click();
+  await page.getByText("Advanced Layout", { exact: true }).click();
   await expect(page.getByLabel("Article Columns")).toHaveValue("2");
   await expect(page.getByLabel("Block 2 break before")).toHaveValue("column");
 });
