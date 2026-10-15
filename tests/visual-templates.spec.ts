@@ -90,7 +90,6 @@ test("local images and crop settings survive save/reload and export from the edi
   expect(raw).not.toContain("data:image");
   expect(raw).not.toContain("renderAssets");
   await page.reload();
-  await page.getByRole("tab", { name: "Preview & export" }).click();
   await expect(page.getByText("Layout checked.")).toBeVisible();
   const frame = page.frameLocator("iframe");
   await expect(frame.locator(".cover-photo")).toHaveAttribute(
@@ -114,6 +113,7 @@ test("local images and crop settings survive save/reload and export from the edi
     "src",
     /^data:image/,
   );
+  await page.getByText(/^Preview notes/).click();
   await expect(page.getByText(/Low-resolution image/).first()).toBeVisible();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export PDF", exact: true }).click();
@@ -318,7 +318,6 @@ test("large local uploads remain previewable but the unchanged PDF request cap i
   await expect(
     page.getByLabel("Cover photograph alternative text"),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "Preview & export" }).click();
   await expect(page.getByText("Layout checked.")).toBeVisible();
   await expect(
     page.getByRole("alert").filter({ hasText: "1 MB PDF request limit" }),

@@ -30,16 +30,15 @@ test("create, structure, persist, preview and export an issue", async ({
     .getByLabel("Block 1 text")
     .fill("A test story with a clear editorial purpose. ".repeat(300));
   await page.getByRole("button", { name: "Save issue" }).click();
-  await expect(page.getByRole("status")).toContainText("Saved locally");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Saved locally" }),
+  ).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Headline", { exact: true })).toHaveValue(
     "People make the difference",
   );
-  await page.getByRole("tab", { name: "Preview & export" }).click();
   await expect(page.getByText("Layout checked.")).toBeVisible();
-  // Re-mounting the iframe must recover its measured result reliably.
-  await page.getByRole("tab", { name: "Edit content" }).click();
-  await page.getByRole("tab", { name: "Preview & export" }).click();
+  // The live iframe remains mounted and measured throughout editing.
   await expect(page.getByText("Layout checked.")).toBeVisible();
   const frame = page.frameLocator("iframe");
   expect(await frame.locator(".page").count()).toBeGreaterThan(3); // cover, contents and measured story pages

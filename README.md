@@ -1,5 +1,13 @@
 # ECU Connect Magazine Builder
 
+## Live split-screen editing
+
+Desktop editing now shows a resizable 60/40 editor/preview workspace. Drag the divider, use its Left/Right keys, or double-click to restore 60/40. Preview updates automatically after a short typing pause; use page navigation, zoom and Fit to width without changing the PDF. Narrow screens use Edit/Preview tabs.
+
+Existing Save and local drafts remain explicit. Export waits for the latest measured revision, and image/overflow/size warnings remain enforced. See the [implementation, validation and limitations report](docs/live-split-editor.md) and [desktop screenshot](docs/previews/live-editor/editing.png). For an isolated local review use `npm run dev -- --port 3119`; keep your usual origin/port when accessing existing browser-local drafts/images.
+
+
+
 ## Phase 3C batch 1
 
 Select **T04 · Editorial continuation** for reference-based one/two-column narrative, ordered figure blocks with captions/credits and yellow callouts. Use story appearance controls for column count/title visibility and block controls for explicit page/column breaks. Fixed-block overflow warns and blocks PDF export; text is never automatically reduced. V17's full-width table below columns and T05–T17 are deferred.

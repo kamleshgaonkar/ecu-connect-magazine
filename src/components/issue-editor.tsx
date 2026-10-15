@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Plus,
   Save,
-  Eye,
   Pencil,
   ChevronUp,
   ChevronDown,
@@ -18,6 +17,7 @@ import { Shell, Empty } from "./shell";
 import { CoverControls, StoryVisualControls } from "./visual-controls";
 import { MediaPicker } from "./media-picker";
 import { Preview } from "./preview";
+import { SplitWorkspace } from "./split-workspace";
 import {
   IssueDesignControls,
   SectionDesignControls,
@@ -44,7 +44,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
     [status, setStatus] = useState("Saved locally"),
     [dirty, setDirty] = useState(false),
     [saving, setSaving] = useState(false),
-    [tab, setTab] = useState<"edit" | "preview">("edit"),
+    [activeStory, setActiveStory] = useState<string | undefined>(undefined),
     [selected, setSelected] = useState(""),
     [sectionType, setSectionType] = useState<string>(sectionNames[0]);
   useEffect(() => {
@@ -131,7 +131,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
   const section = issue?.sections.find((s) => s.id === selected);
   return (
     <Shell>
-      <main className="editor-main">
+      <main className="editor-main live-editor-main">
         <Link
           href="/"
           className="back-link"
@@ -183,36 +183,10 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                 {error}
               </p>
             )}
-            <div className="editor-tabs" role="tablist" aria-label="Issue view">
-              <button
-                role="tab"
-                id="edit-tab"
-                aria-controls="edit-panel"
-                aria-selected={tab === "edit"}
-                onClick={() => setTab("edit")}
-              >
-                <Pencil size={16} /> Edit content
-              </button>
-              <button
-                role="tab"
-                id="preview-tab"
-                aria-controls="preview-panel"
-                aria-selected={tab === "preview"}
-                onClick={() => setTab("preview")}
-              >
-                <Eye size={16} /> Preview & export
-              </button>
-            </div>
-            {tab === "preview" ? (
-              <div
-                role="tabpanel"
-                id="preview-panel"
-                aria-labelledby="preview-tab"
-              >
-                <Preview key={JSON.stringify(issue)} issue={issue} />
-              </div>
-            ) : (
-              <div role="tabpanel" id="edit-panel" aria-labelledby="edit-tab">
+            <SplitWorkspace
+              preview={<Preview issue={issue} activeStoryId={activeStory} />}
+            >
+              <div>
                 <div className="issue-settings panel">
                   <h2>Edition details</h2>
                   <div className="settings-grid">
@@ -287,7 +261,14 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                         >
                           <button
                             className="section-select"
-                            onClick={() => setSelected(s.id)}
+                            onClick={() => {
+                              setSelected(s.id);
+                              setActiveStory(
+                                s.enabled
+                                  ? s.stories.find((story) => story.enabled)?.id
+                                  : undefined,
+                              );
+                            }}
                           >
                             <span className="section-index">
                               {String(index + 1).padStart(2, "0")}
@@ -457,6 +438,13 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                           <StoryEditor
                             key={story.id}
                             story={story}
+                            onSelect={() =>
+                              setActiveStory(
+                                story.enabled && section.enabled
+                                  ? story.id
+                                  : undefined,
+                              )
+                            }
                             index={index}
                             count={section.stories.length}
                             onChange={(next) =>
@@ -499,7 +487,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                   </div>
                 </div>
               </div>
-            )}
+            </SplitWorkspace>
           </>
         )}
       </main>
@@ -516,6 +504,7 @@ function StoryEditor({
   onChange,
   onMove,
   onRemove,
+  onSelect,
 }: {
   story: Story;
   index: number;
@@ -523,6 +512,7 @@ function StoryEditor({
   onChange: (s: Story) => void;
   onMove: (d: -1 | 1) => void;
   onRemove: () => void;
+  onSelect: () => void;
 }) {
   const textareas = useRef<Record<string, HTMLTextAreaElement | null>>({});
   function format(block: Block, mark: string) {
@@ -555,7 +545,12 @@ function StoryEditor({
     });
   }
   return (
-    <section className="story-editor panel">
+    <section
+      className="story-editor panel"
+      data-story-id={story.id}
+      onFocusCapture={onSelect}
+      onPointerDown={onSelect}
+    >
       <div className="panel-heading">
         <h3>Story {String(index + 1).padStart(2, "0")}</h3>
         <div className="inline-actions">

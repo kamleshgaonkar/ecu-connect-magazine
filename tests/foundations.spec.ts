@@ -82,7 +82,6 @@ test("v1 editing migrates safely and saved theme/master selections drive preview
   await expect(
     page.getByRole("combobox", { name: "Story theme", exact: true }).first(),
   ).toHaveValue("cream");
-  await page.getByRole("tab", { name: "Preview & export" }).click();
   await expect(page.getByText("Layout checked.")).toBeVisible();
   const frame = page.frameLocator("iframe");
   const first = frame.locator(".page").nth(2);
@@ -188,15 +187,12 @@ test("invalid unsaved details show a recoverable preview error without losing ed
   await page.goto("/");
   await page.getByRole("link", { name: /Connections that move us/ }).click();
   await page.getByLabel("Issue title", { exact: true }).fill("");
-  await page.getByRole("tab", { name: "Preview & export" }).click();
   await expect(
     page
       .getByRole("alert")
       .filter({ hasText: "Preview needs a nonempty issue title" }),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "Edit content" }).click();
   await expect(page.getByLabel("Issue title", { exact: true })).toHaveValue("");
   await page.getByLabel("Issue title", { exact: true }).fill("Recovered draft");
-  await page.getByRole("tab", { name: "Preview & export" }).click();
   await expect(page.getByText("Layout checked.")).toBeVisible();
 });

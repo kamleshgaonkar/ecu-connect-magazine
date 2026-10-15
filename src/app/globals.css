@@ -1438,3 +1438,325 @@ dialog.modal::backdrop {
 .card-footer .edit-link {
   color: #466c51;
 }
+
+/* Editing workspace only. Magazine document and print styles are isolated in the iframe. */
+.live-editor-main {
+  max-width: none;
+  padding: 18px 24px;
+  height: calc(100dvh - 79px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.live-editor-main > .back-link {
+  margin-bottom: 12px;
+  flex: none;
+  align-self: flex-start;
+}
+.live-editor-main > .editor-heading {
+  margin-bottom: 16px;
+  flex: none;
+}
+.live-editor-main .editor-heading h1 {
+  font-size: 28px;
+}
+.live-editor-main .editor-heading .eyebrow {
+  margin-bottom: 6px;
+}
+.live-editor-main .editor-heading p {
+  margin-top: 6px;
+}
+.mobile-editor-tabs {
+  display: none;
+}
+.split-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, var(--editor-share)) 12px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+}
+.workspace-editor {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 14px 32px 0;
+  scrollbar-gutter: stable;
+}
+.workspace-preview {
+  min-width: 0;
+  min-height: 0;
+  padding-left: 12px;
+  display: flex;
+}
+.workspace-divider {
+  cursor: col-resize;
+  touch-action: none;
+  position: relative;
+  background: transparent;
+}
+.workspace-divider:after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #d7dfd8;
+  border-radius: 3px;
+}
+.workspace-divider:hover:after,
+.workspace-divider:focus-visible:after {
+  background: #205b48;
+  width: 4px;
+  left: 4px;
+}
+.workspace-divider:focus-visible {
+  outline: 2px solid #c28c42;
+  outline-offset: -2px;
+}
+.workspace-editor .editor-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+.workspace-editor .section-list ol {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+.workspace-editor .panel {
+  padding: 18px;
+}
+.workspace-editor .settings-grid {
+  grid-template-columns: 2fr 0.7fr 1.3fr;
+  gap: 10px;
+}
+.workspace-editor .section-fields {
+  grid-template-columns: minmax(0, 1fr);
+}
+.workspace-editor .section-select {
+  overflow-wrap: anywhere;
+}
+.workspace-editor .block-toolbar {
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.workspace-editor .block-heading {
+  align-items: flex-start;
+  flex-direction: column;
+}
+.workspace-editor .block-add {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.workspace-preview .preview-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  gap: 8px;
+}
+.workspace-preview .preview-toolbar {
+  padding: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: none;
+}
+.workspace-preview .preview-toolbar h2 {
+  font-size: 15px;
+}
+.workspace-preview .preview-toolbar p {
+  margin-top: 3px;
+  font-size: 10px;
+}
+.workspace-preview .preview-toolbar .button {
+  padding: 10px;
+  font-size: 11px;
+}
+.preview-navigation {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+  padding: 6px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  flex: none;
+}
+.preview-navigation button {
+  min-height: 36px;
+  min-width: 32px;
+}
+.preview-page-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+.preview-page-label select {
+  width: 54px;
+  padding: 6px;
+  margin: 0;
+}
+.preview-page-total,
+.preview-navigation output {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.preview-navigation output {
+  min-width: 32px;
+  text-align: center;
+}
+.preview-navigation .fit-width {
+  padding: 6px;
+  font-size: 10px;
+}
+.workspace-preview .layout-status {
+  margin: 0;
+  font-size: 10px;
+  max-height: 76px;
+  overflow-y: auto;
+  flex: none;
+}
+.preview-notices {
+  font-size: 11px;
+  flex: none;
+  max-height: 24%;
+  overflow-y: auto;
+}
+.preview-notices summary {
+  cursor: pointer;
+  padding: 4px 0;
+  color: #52685d;
+}
+.preview-notices p {
+  margin: 6px 0;
+}
+.workspace-preview .error {
+  margin: 0;
+  padding: 8px;
+  flex: none;
+  max-height: 20%;
+  overflow-y: auto;
+}
+.workspace-preview .magazine-frame {
+  flex: 1;
+  min-height: 180px;
+  height: auto;
+  margin: 0;
+  border-radius: 6px;
+}
+@media (min-width: 851px) and (max-width: 1200px) {
+  .live-editor-main {
+    padding: 16px;
+  }
+  .workspace-editor .settings-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .workspace-editor .settings-grid > label:first-child {
+    grid-column: 1/-1;
+  }
+  .workspace-editor .section-list ol {
+    grid-template-columns: 1fr;
+  }
+  .workspace-editor .sm\:grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 850px) {
+  .live-editor-main {
+    height: calc(100dvh - 65px);
+    padding: 14px;
+  }
+  .live-editor-main .editor-heading {
+    gap: 10px;
+  }
+  .mobile-editor-tabs {
+    display: flex;
+    flex: none;
+    margin-bottom: 12px;
+  }
+  .split-workspace {
+    display: flex;
+    flex-direction: column;
+  }
+  .workspace-divider {
+    display: none;
+  }
+  .workspace-editor {
+    padding-right: 0;
+    flex: 1;
+  }
+  .workspace-preview {
+    padding: 0;
+    flex: 1;
+  }
+  .split-workspace[data-mobile-view="edit"] .workspace-preview,
+  .split-workspace[data-mobile-view="preview"] .workspace-editor {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .live-editor-main {
+    height: calc(100dvh - 112px);
+    padding: 12px;
+  }
+  .live-editor-main .editor-heading {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .live-editor-main .editor-heading h1 {
+    font-size: 20px;
+  }
+  .live-editor-main .editor-heading .eyebrow {
+    font-size: 8px;
+  }
+  .live-editor-main .editor-heading .draft-badge {
+    display: none;
+  }
+  .live-editor-main .editor-actions {
+    width: auto;
+    flex: none;
+  }
+  .live-editor-main .editor-actions .primary {
+    padding: 10px;
+  }
+  .live-editor-main .save-status {
+    font-size: 10px;
+    flex-wrap: wrap;
+  }
+  .workspace-editor .section-list ol {
+    grid-template-columns: 1fr;
+  }
+  .workspace-editor .settings-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .workspace-editor .settings-grid > label:first-child {
+    grid-column: 1/-1;
+  }
+  .workspace-preview .preview-toolbar {
+    flex-direction: row;
+    align-items: center;
+  }
+  .workspace-preview .preview-toolbar .button {
+    width: auto;
+  }
+}
+
+/* Constrain the grid track itself; overflowing editor content scrolls only inside its panel. */
+.live-editor-main {
+  overflow: clip;
+}
+.split-workspace {
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+}
+
+/* Contain absolutely positioned accessible labels within the scrolling editor. */
+.workspace-editor {
+  position: relative;
+}
