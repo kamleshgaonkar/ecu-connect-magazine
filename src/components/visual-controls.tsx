@@ -18,22 +18,22 @@ export function CoverControls({
     onChange({ ...issue, cover: next });
   }
   return (
-    <details className="mt-5 border-t border-[#e1e7e1] pt-4">
+    <details id="cover-design" className="mt-5 border-t border-[#E5E5E5] pt-4">
       <summary className="cursor-pointer text-xs font-semibold">
-        T01 · Cover design & local images
+        Cover Design
       </summary>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label>
           Cover headline
           <input
             value={cover.headline}
-            placeholder="Use issue title"
+            placeholder="Use magazine title"
             maxLength={200}
             onChange={(e) => change({ ...cover, headline: e.target.value })}
           />
         </label>
         <label>
-          Cover edition ribbon
+          Cover edition label
           <input
             value={cover.edition}
             maxLength={50}
@@ -52,7 +52,7 @@ export function CoverControls({
           />
         </label>
         <label>
-          Cover surface
+          Cover background
           <select
             value={cover.surface}
             onChange={(e) =>
@@ -69,7 +69,7 @@ export function CoverControls({
         </label>
       </div>
       <MediaPicker
-        label="Cover photograph"
+        label="Cover photo"
         value={cover.image}
         onChange={(image) => change({ ...cover, image })}
       />
@@ -97,9 +97,12 @@ export function StoryVisualControls({
     onChange({ ...story, visual: next });
   }
   return (
-    <details className="mb-5 border-b border-[#e1e7e1] pb-4">
+    <details
+      id={"story-images-" + story.id}
+      className="mb-5 border-b border-[#E5E5E5] pb-4"
+    >
       <summary className="cursor-pointer text-xs font-semibold">
-        T02 / T03 · Contents & story images
+        Contents & Story Images
       </summary>
       <label className="mt-4">
         Contents summary
@@ -111,7 +114,7 @@ export function StoryVisualControls({
         />
       </label>
       <label className="mt-3">
-        Contents thumbnail frame
+        Contents image shape
         <select
           value={visual.thumbnailShape ?? "landscape"}
           onChange={(e) =>
@@ -133,14 +136,12 @@ export function StoryVisualControls({
         onChange={(thumbnail) => change({ ...visual, thumbnail })}
       />
       <p className="muted">
-        Select the T03 opener in Story layout & appearance (or the section
-        template) to use this hero. Included sections receive consecutive
-        markers in magazine order; only the first included story displays the
-        large marker.
+        Choose Photo opener in Story Design to use the opening photo. Only the
+        first included story in a section shows its large section number.
       </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label>
-          Opener text placement
+          Opening text position
           <select
             value={visual.position}
             onChange={(e) =>
@@ -150,13 +151,13 @@ export function StoryVisualControls({
               })
             }
           >
-            <option value="below">Full width below hero · Volume 20</option>
-            <option value="left">Left narrative panel</option>
-            <option value="right">Right narrative panel</option>
+            <option value="below">Full width below the photo</option>
+            <option value="left">Text on the left</option>
+            <option value="right">Text on the right</option>
           </select>
         </label>
         <label>
-          Opener photographic area
+          Opening photo size
           <select
             value={visual.heroLayout}
             onChange={(e) =>
@@ -166,15 +167,13 @@ export function StoryVisualControls({
               })
             }
           >
-            <option value="large">Large upper hero</option>
-            <option value="full">
-              Full-page photograph with narrative panel
-            </option>
+            <option value="large">Large photo at the top</option>
+            <option value="full">Full-page photo with text</option>
           </select>
         </label>
       </div>
       <MediaPicker
-        label="Opener photograph"
+        label="Opening photo"
         value={visual.hero}
         onChange={(hero) => change({ ...visual, hero })}
       />

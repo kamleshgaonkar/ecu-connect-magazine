@@ -21,36 +21,31 @@ test("v1 editing migrates safely and saved theme/master selections drive preview
   await expect(
     page.getByLabel("Headline", { exact: true }).first(),
   ).toHaveValue(legacy.sections[0].stories[0].title);
+  await page.getByText("Magazine Design", { exact: true }).click();
   await page
-    .getByText("Magazine appearance & page furniture", { exact: true })
-    .click();
-  await page
-    .getByRole("combobox", { name: "Issue theme", exact: true })
+    .getByRole("combobox", { name: "Magazine background", exact: true })
     .selectOption("ecu-blue");
   await page
-    .getByRole("combobox", { name: "Section theme", exact: true })
+    .getByRole("combobox", { name: "Background Style", exact: true })
     .selectOption("lavender");
   await page
-    .getByRole("combobox", { name: "Editorial template", exact: true })
+    .getByRole("combobox", { name: "Page Layout", exact: true })
     .selectOption("paper");
+  await page.getByText("Story Design", { exact: true }).first().click();
   await page
-    .getByText("Story layout & appearance", { exact: true })
-    .first()
-    .click();
-  await page
-    .getByRole("combobox", { name: "Story template", exact: true })
+    .getByRole("combobox", { name: "Story Layout", exact: true })
     .first()
     .selectOption("editorial");
   await page
-    .getByRole("combobox", { name: "Story theme", exact: true })
+    .getByRole("combobox", { name: "Story background", exact: true })
     .first()
     .selectOption("cream");
   await page
-    .getByRole("combobox", { name: "Opening page master", exact: true })
+    .getByRole("combobox", { name: "Opening Page Layout", exact: true })
     .first()
     .selectOption("paper");
   await page
-    .getByRole("combobox", { name: "Continuation page master", exact: true })
+    .getByRole("combobox", { name: "Continuation Page Layout", exact: true })
     .first()
     .selectOption("article");
   const long =
@@ -61,7 +56,7 @@ test("v1 editing migrates safely and saved theme/master selections drive preview
     .getByRole("textbox", { name: "Block 1 text", exact: true })
     .first()
     .fill(long);
-  await page.getByRole("button", { name: "Save issue" }).click();
+  await page.getByRole("button", { name: "Save Magazine" }).click();
   await page.reload();
   const saved = await page.evaluate(
     () => JSON.parse(localStorage.getItem("ecu-connect:issues:v1")!)[0],
@@ -70,17 +65,16 @@ test("v1 editing migrates safely and saved theme/master selections drive preview
   expect(saved.sections[1].stories[0].blocks).toEqual(
     legacy.sections[1].stories[0].blocks,
   );
-  await page
-    .getByText("Story layout & appearance", { exact: true })
-    .first()
-    .click();
+  await page.getByText("Story Design", { exact: true }).first().click();
   await expect(
     page
-      .getByRole("combobox", { name: "Opening page master", exact: true })
+      .getByRole("combobox", { name: "Opening Page Layout", exact: true })
       .first(),
   ).toHaveValue("paper");
   await expect(
-    page.getByRole("combobox", { name: "Story theme", exact: true }).first(),
+    page
+      .getByRole("combobox", { name: "Story background", exact: true })
+      .first(),
   ).toHaveValue("cream");
   await expect(page.getByText("Layout checked.")).toBeVisible();
   const frame = page.frameLocator("iframe");
@@ -186,13 +180,15 @@ test("invalid unsaved details show a recoverable preview error without losing ed
 }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /Connections that move us/ }).click();
-  await page.getByLabel("Issue title", { exact: true }).fill("");
+  await page.getByLabel("Magazine title", { exact: true }).fill("");
   await expect(
-    page
-      .getByRole("alert")
-      .filter({ hasText: "Preview needs a nonempty issue title" }),
+    page.getByRole("alert").filter({ hasText: "Add a magazine title" }),
   ).toBeVisible();
-  await expect(page.getByLabel("Issue title", { exact: true })).toHaveValue("");
-  await page.getByLabel("Issue title", { exact: true }).fill("Recovered draft");
+  await expect(page.getByLabel("Magazine title", { exact: true })).toHaveValue(
+    "",
+  );
+  await page
+    .getByLabel("Magazine title", { exact: true })
+    .fill("Recovered draft");
   await expect(page.getByText("Layout checked.")).toBeVisible();
 });

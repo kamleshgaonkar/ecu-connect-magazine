@@ -18,12 +18,13 @@ import { CoverControls, StoryVisualControls } from "./visual-controls";
 import { MediaPicker } from "./media-picker";
 import { Preview } from "./preview";
 import { SplitWorkspace } from "./split-workspace";
+import { applyStudioLayout } from "../studio/apply-layout";
 import {
   IssueDesignControls,
   SectionDesignControls,
   StoryDesignControls,
 } from "./design-controls";
-import { templateRegistry } from "../magazine/templates";
+import { layoutNames, layoutDescriptions } from "../studio/layout-catalog";
 import { issueRepository } from "../repositories/issues";
 import {
   id,
@@ -41,6 +42,10 @@ export function IssueEditor({ issueId }: { issueId: string }) {
   const [issue, setIssue] = useState<Issue | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
+    [layoutNotice, setLayoutNotice] = useState(""),
+    [requestedPanel, setRequestedPanel] = useState<string | undefined>(
+      undefined,
+    ),
     [status, setStatus] = useState("Saved locally"),
     [dirty, setDirty] = useState(false),
     [saving, setSaving] = useState(false),
@@ -51,8 +56,32 @@ export function IssueEditor({ issueId }: { issueId: string }) {
     issueRepository
       .get(issueId)
       .then((data) => {
-        setIssue(data);
-        setSelected(data?.sections[0]?.id ?? "");
+        const params = new URLSearchParams(window.location.search);
+        const action = params.get("layout");
+        const request =
+          data && action
+            ? applyStudioLayout(data, action, params.get("story") ?? undefined)
+            : null;
+        setIssue(request?.issue ?? data);
+        setSelected(request?.sectionId ?? data?.sections[0]?.id ?? "");
+        if (request) {
+          if (request.error) setError(request.error);
+          if (request.notice) setLayoutNotice(request.notice);
+          setRequestedPanel(request.target);
+          setActiveStory(request.storyId);
+          if (request.dirty) {
+            setDirty(true);
+            setStatus("Unsaved changes");
+          }
+          params.delete("layout");
+          params.delete("story");
+          window.history.replaceState(
+            window.history.state,
+            "",
+            window.location.pathname +
+              (params.size ? "?" + params.toString() : ""),
+          );
+        }
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -67,6 +96,13 @@ export function IssueEditor({ issueId }: { issueId: string }) {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
+  const loadedIssueId = issue?.id;
+  useEffect(() => {
+    if (!requestedPanel || !loadedIssueId) return;
+    const target = document.getElementById(requestedPanel);
+    if (target instanceof HTMLDetailsElement) target.open = true;
+    target?.scrollIntoView({ block: "start" });
+  }, [requestedPanel, loadedIssueId]);
   function update(next: Issue) {
     setIssue(next);
     setDirty(true);
@@ -117,7 +153,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
     if (
       !issue ||
       !window.confirm(
-        "Delete this issue from this browser? This cannot be undone.",
+        "Delete this magazine from this browser? This cannot be undone.",
       )
     )
       return;
@@ -130,7 +166,12 @@ export function IssueEditor({ issueId }: { issueId: string }) {
   }
   const section = issue?.sections.find((s) => s.id === selected);
   return (
-    <Shell>
+    <Shell
+      onNavigate={(event) => {
+        if (dirty && !window.confirm("Leave without saving your changes?"))
+          event.preventDefault();
+      }}
+    >
       <main className="editor-main live-editor-main">
         <Link
           href="/"
@@ -140,12 +181,14 @@ export function IssueEditor({ issueId }: { issueId: string }) {
               e.preventDefault();
           }}
         >
-          <ArrowLeft size={15} /> All issues
+          <ArrowLeft size={15} /> All Magazines
         </Link>
         {loading ? (
-          <Empty>Loading issue…</Empty>
+          <Empty>Loading magazine…</Empty>
         ) : !issue ? (
-          <Empty>{error || "This issue was not found in this browser."}</Empty>
+          <Empty>
+            {error || "This magazine was not found on this device."}
+          </Empty>
         ) : (
           <>
             <div className="page-heading editor-heading">
@@ -167,11 +210,11 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                   disabled={saving || !dirty}
                 >
                   <Save size={16} />
-                  {saving ? "Saving…" : "Save issue"}
+                  {saving ? "Saving…" : "Save Magazine"}
                 </button>
                 <button
                   className="icon-button"
-                  aria-label="Delete issue"
+                  aria-label="Delete magazine"
                   onClick={removeIssue}
                 >
                   <Trash2 size={17} />
@@ -183,15 +226,20 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                 {error}
               </p>
             )}
+            {layoutNotice && (
+              <p className="studio-notice" role="status">
+                {layoutNotice}
+              </p>
+            )}
             <SplitWorkspace
               preview={<Preview issue={issue} activeStoryId={activeStory} />}
             >
               <div>
                 <div className="issue-settings panel">
-                  <h2>Edition details</h2>
+                  <h2>Magazine Details</h2>
                   <div className="settings-grid">
                     <label>
-                      Issue title
+                      Magazine title
                       <input
                         value={issue.title}
                         maxLength={150}
@@ -213,7 +261,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                       />
                     </label>
                     <label>
-                      Edition date
+                      Publication date
                       <input
                         placeholder="e.g. October 2026"
                         maxLength={50}
@@ -335,7 +383,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                       <>
                         <section className="panel section-settings">
                           <div className="panel-heading">
-                            <h2>Section settings</h2>
+                            <h2>Section Details</h2>
                             <button
                               className="icon-button"
                               aria-label="Remove section"
@@ -371,7 +419,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                               />
                             </label>
                             <label>
-                              Editorial template
+                              Page Layout
                               <select
                                 value={section.template}
                                 onChange={(e) =>
@@ -384,7 +432,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                               >
                                 {templates.map((t) => (
                                   <option key={t} value={t}>
-                                    {templateRegistry[t].label}
+                                    {layoutNames[t]}
                                   </option>
                                 ))}
                               </select>
@@ -405,10 +453,10 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                                 })
                               }
                             />{" "}
-                            Include in this issue
+                            Include in this magazine
                           </label>
                           <p className="muted">
-                            {templateRegistry[section.template].description}
+                            {layoutDescriptions[section.template]}
                           </p>
                         </section>
                         <div className="stories-heading">
@@ -481,7 +529,9 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                       <Empty>
                         <LayersIcon />
                         <h3>Build your edition, one section at a time</h3>
-                        <p>Select a section type and add it to your issue.</p>
+                        <p>
+                          Select a section type and add it to your magazine.
+                        </p>
                       </Empty>
                     )}
                   </div>
@@ -590,7 +640,7 @@ function StoryEditor({
         />
       </label>
       <label>
-        Standfirst / introduction
+        Introduction
         <textarea
           rows={2}
           value={story.subtitle}
@@ -599,7 +649,7 @@ function StoryEditor({
         />
       </label>
       <label>
-        Byline
+        Author
         <input
           value={story.byline}
           maxLength={150}
@@ -629,8 +679,8 @@ function StoryEditor({
                 <option value="heading">Heading</option>
                 <option value="quote">Pull quote</option>
                 <option value="list">Bullet list</option>
-                <option value="figure">Figure / photograph</option>
-                <option value="callout">Yellow callout</option>
+                <option value="figure">Image</option>
+                <option value="callout">Callout</option>
               </select>
             </label>
             <div className="inline-actions">
@@ -694,19 +744,19 @@ function StoryEditor({
               }
             >
               <option value="auto">Automatic</option>
-              <option value="column">Next T04 column</option>
+              <option value="column">Next column</option>
               <option value="page">Next page</option>
             </select>
           </label>
           {block.type === "figure" && (
             <>
               <MediaPicker
-                label={`Block ${i + 1} figure`}
+                label={`Image in block ${i + 1}`}
                 value={block.image}
                 onChange={(image) => blockChange({ ...block, image })}
               />
               <label>
-                Block {i + 1} figure height (mm)
+                Image {i + 1} height (mm)
                 <input
                   type="number"
                   min={20}

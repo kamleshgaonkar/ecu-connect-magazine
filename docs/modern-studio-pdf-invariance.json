@@ -1,0 +1,10 @@
+{
+  "baselineCommit": "70579d3d37743c699e11c8feb3fe23a0f58b57dd",
+  "identicalHtml": true,
+  "identicalPdfExceptTimestamps": true,
+  "htmlSha256": "cd21f0f2cbd2c1ad5755800dbe9c206b298180554ddf0c0b9302aa1c391d2bf2",
+  "pdfBytes": [
+    90323,
+    90323
+  ]
+}

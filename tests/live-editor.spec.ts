@@ -49,7 +49,7 @@ test("desktop has a live 60/40 workspace, independent scrolling and keyboard/poi
     await page.evaluate(() => document.documentElement.scrollHeight),
   ).toBeLessThanOrEqual(1001);
   await expect(
-    page.getByRole("button", { name: "Save issue", exact: true }),
+    page.getByRole("button", { name: "Save Magazine", exact: true }),
   ).toBeInViewport();
   await page.screenshot({ path: "test-results/live-split-desktop.png" });
 });

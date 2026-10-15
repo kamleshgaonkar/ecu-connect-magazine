@@ -9,7 +9,10 @@ import { resolve } from "node:path";
 import { magazineDocument } from "../src/magazine/document";
 import { sampleIssue } from "../src/domain/sample";
 import { withPreviewControls } from "../src/components/preview-document";
-const baselinePath = resolve(".cache/live-baseline/src/magazine/document.ts");
+const baselinePath = resolve(
+  process.env.PDF_BASELINE_DIR || ".cache/live-baseline",
+  "src/magazine/document.ts",
+);
 const { magazineDocument: baselineDocument } = await import(baselinePath);
 const issue = structuredClone(sampleIssue);
 const baseline = baselineDocument(issue, "identical-input");
@@ -50,7 +53,9 @@ try {
       "PDF visual/content bytes changed (after timestamp normalization)",
     );
   const evidence = {
-    baselineCommit: "455e186735d8743b214534e109245af82da6a073",
+    baselineCommit:
+      process.env.PDF_BASELINE_COMMIT ||
+      "455e186735d8743b214534e109245af82da6a073",
     identicalHtml: true,
     identicalPdfExceptTimestamps: true,
     htmlSha256: createHash("sha256").update(current).digest("hex"),

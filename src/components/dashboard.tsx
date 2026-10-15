@@ -2,26 +2,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Plus,
-  ArrowUpRight,
-  Search,
-  FileText,
-  Layers,
-  Clock,
-  X,
-} from "lucide-react";
+import { Plus, ArrowUpRight, Search, FileText, X } from "lucide-react";
 import { Shell, Empty } from "./shell";
 import { CreateDialog } from "./create-dialog";
 import { issueRepository } from "../repositories/issues";
 import { newIssue, wordCount, type Issue } from "../domain/issue";
 export function Dashboard() {
   const router = useRouter();
-  const [issues, setIssues] = useState<Issue[]>([]),
-    [loading, setLoading] = useState(true),
-    [error, setError] = useState(""),
-    [query, setQuery] = useState(""),
-    [creating, setCreating] = useState(false);
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [creating, setCreating] = useState(false);
   useEffect(() => {
     issueRepository
       .list()
@@ -36,75 +28,52 @@ export function Dashboard() {
         Number(form.get("volume")),
       );
       await issueRepository.save(issue);
-      router.push(`/issues/${issue.id}`);
+      router.push("/issues/" + issue.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to create issue");
+      setError(e instanceof Error ? e.message : "Unable to create magazine");
     }
   }
-  const visible = issues.filter((i) =>
-    `${i.title} ${i.volume}`.toLowerCase().includes(query.toLowerCase()),
+  const visible = issues.filter((issue) =>
+    (issue.title + " " + issue.volume)
+      .toLowerCase()
+      .includes(query.toLowerCase()),
   );
   return (
     <Shell>
       <main className="dashboard">
-        <div className="eyebrow">YOUR STORIES, BEAUTIFULLY CONNECTED</div>
         <div className="page-heading">
           <div>
-            <h1>Issues</h1>
-            <p>Create, curate and bring your next edition to life.</p>
+            <p className="studio-kicker">MADE FOR YOUR NEXT EDITION</p>
+            <h1>Magazines</h1>
+            <p>Your stories. Your layouts. Ready to share.</p>
           </div>
           <button className="button primary" onClick={() => setCreating(true)}>
-            <Plus size={18} /> Create issue
+            <Plus size={18} />
+            Create Magazine
           </button>
         </div>
-        <div className="stats">
-          <div>
-            <span className="stat-icon">
-              <BookIcon />
-            </span>
-            <div>
-              <strong>{issues.length.toString().padStart(2, "0")}</strong>
-              <span>Total issues</span>
-            </div>
-          </div>
-          <div>
-            <span className="stat-icon peach">
-              <FileText size={21} />
-            </span>
-            <div>
-              <strong>{issues.length.toString().padStart(2, "0")}</strong>
-              <span>In progress</span>
-            </div>
-          </div>
-          <div>
-            <span className="stat-icon green">
-              <Layers size={21} />
-            </span>
-            <div>
-              <strong>
-                {issues
-                  .reduce(
-                    (n, i) => n + i.sections.filter((s) => s.enabled).length,
-                    0,
-                  )
-                  .toString()
-                  .padStart(2, "0")}
-              </strong>
-              <span>Active sections</span>
-            </div>
-          </div>
+        <div className="studio-workflow" aria-label="Magazine workflow">
+          <span>Create Magazine</span>
+          <span aria-hidden="true">→</span>
+          <span>Add Stories</span>
+          <span aria-hidden="true">→</span>
+          <Link href="/templates">Choose Layout</Link>
+          <span aria-hidden="true">→</span>
+          <span>Review</span>
+          <span aria-hidden="true">→</span>
+          <span>Export PDF</span>
         </div>
         <div className="list-toolbar">
           <h2>
-            Your editions <span>{issues.length}</span>
+            Your magazines <span>{issues.length}</span>
           </h2>
           <label className="search">
             <Search size={17} />
             <input
-              aria-label="Search issues"
-              placeholder="Search issues…"
+              aria-label="Search magazines"
+              placeholder="Search magazines"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(event) => setQuery(event.target.value)}
             />
           </label>
         </div>
@@ -114,31 +83,21 @@ export function Dashboard() {
           </p>
         )}
         {loading ? (
-          <Empty>Loading your workspace…</Empty>
+          <Empty>Loading your magazines…</Empty>
         ) : (
           <div className="issue-grid">
             {visible.map((issue) => (
               <Link
                 className="issue-card"
-                href={`/issues/${issue.id}`}
+                href={"/issues/" + issue.id}
                 key={issue.id}
               >
-                <div className="cover-art">
-                  <div className="cover-masthead">
-                    ECU <em>Connect</em>
-                    <span>THE WORLD, WITHIN REACH.</span>
+                <div className="studio-draft-thumbnail" aria-hidden="true">
+                  <div className="studio-paper-icon">
+                    <FileText size={42} />
+                    <span>VOL. {issue.volume}</span>
                   </div>
-                  <span className="volume-label">
-                    VOL. {issue.volume.toString().padStart(2, "0")}
-                  </span>
-                  <div className="cover-orbit orbit-one" />
-                  <div className="cover-orbit orbit-two" />
-                  <div className="cover-lines" />
-                  <div className="cover-title">{issue.title}</div>
-                  <div className="cover-bottom">
-                    <span>{issue.date || "NEW EDITION"}</span>
-                    <span>ECU WORLDWIDE ↗</span>
-                  </div>
+                  <span>Continue your magazine</span>
                 </div>
                 <div className="issue-card-info">
                   <div className="card-meta">
@@ -147,15 +106,14 @@ export function Dashboard() {
                   </div>
                   <h3>{issue.title}</h3>
                   <p>
-                    {issue.sections.filter((s) => s.enabled).length} sections{" "}
-                    <span>·</span> {wordCount(issue).toLocaleString()} words{" "}
+                    {issue.sections.filter((section) => section.enabled).length}{" "}
+                    sections · {wordCount(issue).toLocaleString()} words
                     {issue.sample && (
                       <span className="sample-label">Sample content</span>
                     )}
                   </p>
                   <div className="card-footer">
                     <span>
-                      <Clock size={13} />{" "}
                       {new Date(issue.updatedAt).toLocaleDateString("en-GB", {
                         day: "numeric",
                         month: "short",
@@ -164,7 +122,7 @@ export function Dashboard() {
                       })}
                     </span>
                     <span className="edit-link">
-                      Open issue <ArrowUpRight size={16} />
+                      Open Magazine <ArrowUpRight size={16} />
                     </span>
                   </div>
                 </div>
@@ -172,77 +130,51 @@ export function Dashboard() {
             ))}
             <button className="new-card" onClick={() => setCreating(true)}>
               <span>
-                <Plus size={26} />
+                <Plus size={25} />
               </span>
-              <strong>A new story starts here</strong>
-              <p>Create a fresh issue and make it yours.</p>
-              <span className="text-link">
-                Create issue <ArrowUpRight size={15} />
-              </span>
+              <strong>Create Magazine</strong>
+              <p>
+                Start with a blank magazine.
+                <br />
+                Add your stories when you are ready.
+              </p>
             </button>
           </div>
         )}
-        {!loading && query && visible.length === 0 && (
-          <Empty>No issues match “{query}”.</Empty>
+        {!loading && query && !visible.length && (
+          <Empty>No magazines match “{query}”.</Empty>
         )}
-        <section className="template-section" id="templates">
+        <section className="studio-template-prompt">
           <div>
-            <div className="eyebrow">A HEAD START FOR EVERY STORY</div>
-            <h2>Thoughtful templates. Your voice.</h2>
-            <p>Reusable layouts that give every section a place to shine.</p>
+            <h2>A layout for every story</h2>
+            <p>
+              Explore the original magazine layouts and see what is available.
+            </p>
           </div>
-          <div className="template-grid">
-            {[
-              [
-                "01",
-                "Feature",
-                "A bold opener, spacious storytelling and pull quotes.",
-              ],
-              [
-                "02",
-                "Dispatch",
-                "Clear updates and stories from across the network.",
-              ],
-              [
-                "03",
-                "Bulletin",
-                "Scannable notes, lists and useful information.",
-              ],
-            ].map(([n, t, d]) => (
-              <div className="template-card" key={n}>
-                <span>
-                  {n} <Layers size={18} />
-                </span>
-                <h3>{t}</h3>
-                <p>{d}</p>
-              </div>
-            ))}
-          </div>
+          <Link className="button secondary" href="/templates">
+            Explore Page Templates <ArrowUpRight size={16} />
+          </Link>
         </section>
-        <footer className="dashboard-footer">
-          Made for the stories that connect us.
-          <span>ECU Connect · Editorial workspace</span>
-        </footer>
         {creating && (
           <CreateDialog onClose={() => setCreating(false)}>
             <button
               className="icon-button close-modal"
-              aria-label="Close create issue"
+              aria-label="Close create magazine"
               onClick={() => setCreating(false)}
             >
               <X size={20} />
             </button>
-            <h2 id="create-heading">Create a new issue</h2>
-            <p>A blank edition, ready for your stories.</p>
+            <h2 id="create-heading">Create Magazine</h2>
+            <p>Start with the details. Add stories next.</p>
             <form action={create}>
               <label>
-                Issue title
+                Magazine title
                 <input
                   name="title"
                   required
                   maxLength={150}
                   autoFocus
-                  placeholder="A world of connections"
+                  placeholder="Name your magazine"
                 />
               </label>
               <label>
@@ -257,7 +189,8 @@ export function Dashboard() {
                 />
               </label>
               <button className="button primary" type="submit">
-                <Plus size={16} /> Create issue
+                <Plus size={16} />
+                Create Magazine
               </button>
             </form>
           </CreateDialog>
@@ -265,7 +198,4 @@ export function Dashboard() {
       </main>
     </Shell>
   );
-}
-function BookIcon() {
-  return <FileText size={21} />;
 }

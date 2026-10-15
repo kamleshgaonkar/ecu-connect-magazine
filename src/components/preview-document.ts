@@ -36,6 +36,8 @@ export function previewController(renderId: string) {
       );
     const root = document.getElementById("pages")!;
     root.style.padding = "16px";
+    root.style.background = "#F5F5F5";
+    document.body.style.background = "#F5F5F5";
     for (const page of pages()) page.style.setProperty("zoom", String(scale));
   }
   window.addEventListener("message", (event) => {

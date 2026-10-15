@@ -7,6 +7,7 @@ import { mediaRepository } from "../media/local";
 import { prepareRenderIssue } from "../media/render";
 import { magazineDocument } from "../magazine/document";
 import { withPreviewControls } from "./preview-document";
+import { friendlyPreviewMessage } from "../studio/layout-catalog";
 
 export function Preview({
   issue,
@@ -47,7 +48,7 @@ export function Preview({
               source: issue,
               error:
                 e instanceof Error && e.name === "ZodError"
-                  ? "Preview needs a nonempty issue title, valid volume and nonempty section/story titles. Check content limits before retrying."
+                  ? "Add a magazine title, a valid volume, and a title for each section and story."
                   : e instanceof Error
                     ? e.message
                     : "Unable to read local images.",
@@ -180,7 +181,11 @@ export function Preview({
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Export failed");
+      setError(
+        e instanceof Error
+          ? friendlyPreviewMessage(e.message)
+          : "Export failed",
+      );
     } finally {
       setBusy(false);
     }
@@ -278,8 +283,8 @@ export function Preview({
           : updating
             ? "Updating preview…"
             : currentLayout?.warnings.length
-              ? currentLayout.warnings.join(" ")
-              : "Layout checked. Page numbers and contents are generated from these pages."}
+              ? currentLayout.warnings.map(friendlyPreviewMessage).join(" ")
+              : "Layout checked. Page numbers and contents are up to date."}
       </div>
       {prepared?.error && (
         <p className="error" role="alert">
@@ -289,9 +294,9 @@ export function Preview({
       )}
       {tooLarge && (
         <p className="error" role="alert">
-          Images and content exceed the existing 1 MB PDF request limit. Replace
-          large images with smaller files before export. No images have been
-          resized or omitted.
+          Your magazine is larger than the 1 MB PDF request limit. Choose
+          smaller image files before exporting. Your images have not been
+          changed.
         </p>
       )}
       {error && (
@@ -301,14 +306,14 @@ export function Preview({
       )}
       <details className="preview-notices">
         <summary>
-          Preview notes
+          Review notes
           {currentLayout?.notices.length
             ? " (" + currentLayout.notices.length + ")"
             : ""}
         </summary>
         {currentLayout?.notices.map((notice) => (
           <p key={notice} className="muted" role="note">
-            {notice}
+            {friendlyPreviewMessage(notice)}
           </p>
         ))}
         {issue.sample && (
@@ -318,8 +323,8 @@ export function Preview({
           </p>
         )}
         <p className="muted">
-          Text flows at its authored size. Preview and PDF use the same magazine
-          renderer. View controls do not change the exported pages.
+          Your layout and text sizes stay the same when you export. Zoom only
+          changes your view.
         </p>
       </details>
       <iframe

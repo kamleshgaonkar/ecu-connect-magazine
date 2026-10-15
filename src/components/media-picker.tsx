@@ -106,16 +106,16 @@ export function MediaPicker({
     }
   }
   return (
-    <fieldset className="my-4 min-w-0 rounded-lg border border-[#e1e7e1] p-3">
+    <fieldset className="my-4 min-w-0 rounded-lg border border-[#E5E5E5] p-3">
       <legend className="px-1 text-xs font-semibold">{label}</legend>
       <div className="grid gap-3 sm:grid-cols-2">
         <label>
-          {label} selection
+          {label} — choose image
           <select
             value={value?.assetId ?? ""}
             onChange={(e) => select(e.target.value)}
           >
-            <option value="">No image — labelled fallback</option>
+            <option value="">No image selected</option>
             {value && !assets.some((a) => a.id === value.assetId) && (
               <option value={value.assetId}>Missing image</option>
             )}
@@ -140,20 +140,20 @@ export function MediaPicker({
         </label>
       </div>
       <p className="muted mt-2">
-        Use images you are permitted to publish. Images stay in this browser.
-        PDF requests are limited to 1 MB including images; compact JPEG/WebP
-        files work best. Uploads are never resized automatically.
+        Upload PNG, JPEG or WebP files up to 8 MB. Images are saved in this
+        browser. PDF exports have a 1 MB total limit, so choose smaller files
+        when needed. Your images are never resized automatically.
       </p>
       {error && (
         <p role="alert" className="error">
           {error}
         </p>
       )}
-      {busy && <p role="status">Storing image…</p>}
+      {busy && <p role="status">Saving image…</p>}
       {value && (
         <>
           {preview ? (
-            <div className="mt-3 flex justify-center bg-[#edf0ef]">
+            <div className="mt-3 flex justify-center bg-[#F5F5F5]">
               {/* Local data URLs need neither Next image optimization nor network access. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -173,7 +173,7 @@ export function MediaPicker({
           )}
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label>
-              {label} alternative text
+              {label} description
               <input
                 value={value.alt}
                 maxLength={500}
@@ -181,7 +181,7 @@ export function MediaPicker({
               />
             </label>
             <label>
-              {label} crop
+              {label} fit
               <select
                 value={value.fit ?? "cover"}
                 onChange={(e) =>
@@ -197,7 +197,7 @@ export function MediaPicker({
             </label>
             {(["x", "y"] as const).map((axis) => (
               <label key={axis}>
-                {label} focal {axis === "x" ? "horizontal" : "vertical"} (
+                {label} {axis === "x" ? "horizontal" : "vertical"} position (
                 {Math.round(value.focalPoint[axis] * 100)}%)
                 <input
                   type="range"

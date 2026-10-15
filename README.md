@@ -1,5 +1,13 @@
 # ECU Connect Magazine Builder
 
+## Modern white studio
+
+The application now has a white/monochrome workspace, **Magazines** and **Page Templates** navigation, and a real [Page Templates gallery](/templates). The gallery uses 17 original reference-page thumbnails; only the four implemented families have Use This Layout actions. Story choices preserve content and require Save Magazine to persist. The live split editor, uploads, drafts and PDF rendering are retained.
+
+See [screenshots, changed files, tests and limitations](docs/modern-studio-ui.md). Run `npm run dev -- --port 3121` for an isolated review. Use your original host/port to access existing browser-local drafts and images.
+
+
+
 ## Live split-screen editing
 
 Desktop editing now shows a resizable 60/40 editor/preview workspace. Drag the divider, use its Left/Right keys, or double-click to restore 60/40. Preview updates automatically after a short typing pause; use page navigation, zoom and Fit to width without changing the PDF. Narrow screens use Edit/Preview tabs.

@@ -22,7 +22,7 @@ export function SplitWorkspace({
       <div
         className="editor-tabs mobile-editor-tabs"
         role="tablist"
-        aria-label="Issue view"
+        aria-label="Magazine view"
       >
         {(["edit", "preview"] as const).map((view) => (
           <button

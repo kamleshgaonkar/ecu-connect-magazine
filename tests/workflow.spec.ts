@@ -10,13 +10,13 @@ test("create, structure, persist, preview and export an issue", async ({
     page.getByText("Connections that move us").first(),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Create issue", exact: true })
+    .getByRole("button", { name: "Create Magazine", exact: true })
     .first()
     .click();
-  await page.getByLabel("Issue title").fill("An editorial journey");
+  await page.getByLabel("Magazine title").fill("An editorial journey");
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Create issue", exact: true })
+    .getByRole("button", { name: "Create Magazine", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "An editorial journey" }),
@@ -29,7 +29,7 @@ test("create, structure, persist, preview and export an issue", async ({
   await page
     .getByLabel("Block 1 text")
     .fill("A test story with a clear editorial purpose. ".repeat(300));
-  await page.getByRole("button", { name: "Save issue" }).click();
+  await page.getByRole("button", { name: "Save Magazine" }).click();
   await expect(
     page.getByRole("status").filter({ hasText: "Saved locally" }),
   ).toBeVisible();
@@ -140,7 +140,7 @@ test("dashboard and editor are usable on a narrow viewport", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Issues", exact: true }),
+    page.getByRole("heading", { name: "Magazines", exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(
