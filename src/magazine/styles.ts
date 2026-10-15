@@ -29,4 +29,20 @@ export const magazineStyles = `
 .opener-photo{position:absolute;top:0;left:0;width:210mm;height:137mm;object-fit:cover}.opener-fade{position:absolute;top:106mm;left:0;right:0;height:32mm;background:linear-gradient(transparent,var(--theme-background));pointer-events:none}.opener .section-header{z-index:2;top:54mm;color:white;font-size:18.62pt;text-shadow:0 1px 3px #0009;max-width:85mm;white-space:pre-line}.opener .top-accent{z-index:2;height:2.96mm}.section-ordinal{position:absolute;left:15mm;top:2mm;font-family:${t.fonts.condensed};font-size:172.17pt;line-height:1;color:#ffffff80}.opener .page-body{top:135mm;height:137mm}.opener .story-title{font-size:30pt;line-height:1.1;margin-bottom:2mm}.opener .byline{margin:0 0 5mm;padding-bottom:3mm;border-bottom:.5mm solid var(--ecu-yellow)}.opener .subtitle{font-size:16pt;line-height:1.3;margin-bottom:3mm}.opener-left .page-body{right:auto;width:85mm}.opener-right .page-body{left:auto;width:85mm}.opener-left .story-title,.opener-right .story-title{font-size:24pt}.hero-full .opener-photo{height:297mm}.hero-full .opener-fade{display:none}.hero-full .page-body{background:var(--theme-background);padding:6mm;border-radius:3mm;height:132mm}.hero-full .page-footer{background:var(--theme-background);padding:1mm;border-radius:1mm}.story-media{margin:0 0 4mm;break-inside:avoid}.story-photo{display:block;width:100%;height:65mm;object-fit:cover}.story-media figcaption{font-size:8pt;line-height:1.3;margin-top:2mm}
 .photo-credit{position:absolute;left:15mm;right:15mm;font-size:6pt;line-height:1.3;color:var(--ecu-blue);background:#ffffffdf;padding:1mm;text-align:center}.cover-photo-credit{bottom:10mm}.opener-photo-credit{top:117mm}.toc-media-credit{font-size:6pt;line-height:1.3;margin:1mm 0 0}.media-warning{outline:2px solid #b0441c}
 @page{size:${t.page.widthMm}mm ${t.page.heightMm}mm;margin:0}@media print{body{background:white}.pages{padding:0;gap:0;display:block}.page{box-shadow:none;margin:0}.page:last-child{break-after:auto}}
+/* T04: explicit measured narrative columns; figures and callouts never split. */
+/* Windows font descent extends the masthead line box. Extra invisible measurement
+   height preserves its original position, type size and visible appearance. */
+.cover-brand{height:48mm}
+.master-editorial .section-header{left:19mm;font-size:18.62pt;white-space:pre-line}
+.master-editorial .editorial-region{top:25mm;height:247mm;display:flex;gap:12mm}
+.master-editorial .editorial-region[data-columns="2"]{top:30mm;height:242mm}
+.editorial-column{flex:1;min-width:0;height:100%;display:flow-root;overflow:visible}
+.master-editorial .story-title{font-size:27pt;line-height:1.12;margin:0 0 3mm;padding-bottom:3mm;border-bottom:.5mm solid var(--ecu-yellow)}
+.master-editorial .text-block{font-size:9pt;line-height:12pt;margin:0 0 4mm}
+.master-editorial .heading{font-size:9pt;line-height:12pt;font-weight:700;margin:0 0 3mm}
+.master-editorial .quote{font-size:13pt;line-height:17pt}
+.master-editorial .list-item{padding-left:3mm;margin-bottom:2mm}.master-editorial .list-item:before{content:'›';left:0}
+.text-block.callout{background:var(--ecu-yellow);color:#1e1e1e;padding:6mm 10mm;text-align:center;border-radius:4mm;font-size:9pt;line-height:12pt}
+.editorial-figure{margin:0 0 5mm;break-inside:avoid}.editorial-image{width:100%;display:block;object-fit:contain;border-radius:4mm;border:.2mm solid #b5cce7}
+.editorial-figure figcaption{font-size:8pt;line-height:10pt;font-style:italic;margin-top:3mm;white-space:pre-wrap}
 `;

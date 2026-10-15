@@ -32,6 +32,8 @@ export async function renderMagazine(
   ];
   const storyPages: LayoutResult["storyPages"] = {};
   let page!: HTMLElement, body!: HTMLElement;
+  let narrativeColumns: HTMLElement[] = [];
+  let narrativeColumn = 0;
   let context: (typeof stories)[number] | undefined;
   const entries: { id: string; number: HTMLElement }[] = [];
   function result() {
@@ -137,6 +139,24 @@ export async function renderMagazine(
     ({ page, body } = make("article", master));
     page.dataset.storyId = context!.story.id;
     page.dataset.theme = context!.theme;
+    narrativeColumns = [];
+    narrativeColumn = 0;
+    if (master === "editorial") {
+      const container = body;
+      container.classList.add("editorial-region");
+      const count = context!.story.editorial?.columns ?? 1;
+      container.dataset.columns = String(count);
+      narrativeColumns = Array.from({ length: count }, () =>
+        el("div", "editorial-column"),
+      );
+      container.append(...narrativeColumns);
+      body = narrativeColumns[0];
+    }
+  }
+  function advance(forcePage = false) {
+    if (!forcePage && narrativeColumn + 1 < narrativeColumns.length) {
+      body = narrativeColumns[++narrativeColumn];
+    } else fresh(true);
   }
   function fits() {
     return (
@@ -144,15 +164,22 @@ export async function renderMagazine(
       body.scrollWidth <= body.clientWidth + 1
     );
   }
-  function add(node: HTMLElement) {
+  function add(node: HTMLElement, atomic = false) {
     body.append(node);
     if (fits()) return;
     node.remove();
-    if (body.children.length) {
-      fresh(true);
+    if (body.children.length && (atomic || !narrativeColumns.length)) {
+      advance();
       body.append(node);
       if (fits()) return;
       node.remove();
+    }
+    if (atomic) {
+      body.append(node);
+      warnings.push(
+        `Editorial block cannot fit: ${context!.story.title}. Shorten the block/caption or select a suitable full-width T04 continuation. Typography has not been reduced.`,
+      );
+      return;
     }
     const chars = Array.from(node.textContent!);
     let offset = 0;
@@ -174,6 +201,10 @@ export async function renderMagazine(
       }
       if (!best) {
         part.remove();
+        if (body.children.length) {
+          advance();
+          continue;
+        }
         warnings.push(
           "A layout block cannot fit on an A4 page: " + context!.story.title,
         );
@@ -192,7 +223,7 @@ export async function renderMagazine(
         ...sliceStyled(node, offset, offset + end).childNodes,
       );
       offset += end;
-      if (offset < chars.length) fresh(true);
+      if (offset < chars.length) advance();
     }
   }
   try {
@@ -354,9 +385,18 @@ export async function renderMagazine(
       const physicalPage = root.children.length;
       const folio = folioForPage(physicalPage, "article", frontMatterPages)!;
       storyPages[item.story.id] = { physicalPage, folio };
-      add(el("h2", "story-title", item.story.title));
-      if (item.story.subtitle) add(el("p", "subtitle", item.story.subtitle));
-      if (item.story.byline) add(el("p", "byline", item.story.byline));
+      if (
+        item.pageTemplate !== "editorial" ||
+        item.story.editorial?.showTitle !== false
+      ) {
+        const heading = el("div", "story-heading");
+        heading.append(el("h2", "story-title", item.story.title));
+        if (item.story.subtitle)
+          heading.append(el("p", "subtitle", item.story.subtitle));
+        if (item.story.byline)
+          heading.append(el("p", "byline", item.story.byline));
+        add(heading, true);
+      }
       if (item.pageTemplate === "opener" && !item.story.visual?.hero)
         notices.push("No section photograph selected: " + item.sectionName);
       for (const reference of item.story.media) {
@@ -388,8 +428,55 @@ export async function renderMagazine(
             "Story image/caption exceeds an A4 page: " + item.story.title,
           );
       }
-      for (const block of item.story.blocks) {
+      for (const [blockIndex, block] of item.story.blocks.entries()) {
+        if (
+          block.breakBefore === "page" &&
+          (body.children.length || narrativeColumn)
+        )
+          advance(true);
+        if (block.breakBefore === "column" && body.children.length) advance();
+        if (block.type === "figure") {
+          const figure = el("figure", "editorial-figure");
+          const image = mediaImage(
+            block.image,
+            issue.renderAssets ?? [],
+            "editorial-image",
+            "Select an approved figure image",
+          );
+          image.style.height = `${block.figureHeightMm ?? 100}mm`;
+          figure.append(image);
+          const caption = [
+            block.text,
+            block.image?.caption,
+            block.image?.credit,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          if (caption) figure.append(rich("figcaption", "", caption));
+          add(figure, true);
+          if (!block.image)
+            warnings.push(
+              `Figure image missing in ${item.story.title}. Select an approved local asset before export.`,
+            );
+          continue;
+        }
         if (!block.text) continue;
+        if (block.type === "heading" && narrativeColumns.length) {
+          const next = item.story.blocks
+            .slice(blockIndex + 1)
+            .find((b) => b.text || b.type === "figure");
+          if (next) {
+            const probe = el("div");
+            probe.append(
+              rich("h3", "text-block heading", block.text),
+              rich("p", "text-block", next.text.slice(0, 140)),
+            );
+            body.append(probe);
+            const keep = fits();
+            probe.remove();
+            if (!keep && body.children.length) advance();
+          }
+        }
         if (block.type === "list") {
           for (const line of block.text.split("\n"))
             add(rich("p", "text-block list-item", line));
@@ -404,6 +491,9 @@ export async function renderMagazine(
               "text-block " + (block.type === "paragraph" ? "" : block.type),
               block.text,
             ),
+            block.type === "callout" ||
+              block.type === "quote" ||
+              block.type === "heading",
           );
       }
       for (const entry of entries.filter((e) => e.id === item.story.id))
@@ -416,6 +506,7 @@ export async function renderMagazine(
         story.visual?.hero,
         story.visual?.thumbnail,
         ...story.media,
+        ...story.blocks.map((block) => block.image),
       ]),
     ].filter((r) => Boolean(r));
     for (const reference of references) {
@@ -479,6 +570,17 @@ export async function renderMagazine(
         warnings.push(
           `Page ${i + 1} overflows; text remains visible. Export is blocked.`,
         );
+      for (const region of p.querySelectorAll<HTMLElement>(
+        ".editorial-column",
+      )) {
+        if (
+          region.scrollHeight > region.clientHeight + 1 ||
+          region.scrollWidth > region.clientWidth + 1
+        )
+          warnings.push(
+            `Page ${i + 1} T04 column overflows. Shorten the fixed block or use an approved full-width T04 continuation. Export is blocked.`,
+          );
+      }
       for (const credit of p.querySelectorAll<HTMLElement>(".photo-credit")) {
         if (
           credit.scrollWidth > credit.clientWidth + 1 ||

@@ -5,9 +5,15 @@ export const templateIds = [
   "editorial",
   "paper",
   "opener",
+  "t04",
 ] as const;
 export type TemplateId = (typeof templateIds)[number];
-export const pageMasterIds = ["article", "paper", "opener"] as const;
+export const pageMasterIds = [
+  "article",
+  "paper",
+  "opener",
+  "editorial",
+] as const;
 export type PageMasterId = (typeof pageMasterIds)[number];
 export const themeIds = [
   "ecu-light",
@@ -17,6 +23,7 @@ export const themeIds = [
   "lavender",
   "mint",
   "sage",
+  "air-blue",
 ] as const;
 export type ThemeId = (typeof themeIds)[number];
 export const themeLabels: Record<ThemeId, string> = {
@@ -27,4 +34,5 @@ export const themeLabels: Record<ThemeId, string> = {
   lavender: "Lavender",
   mint: "Mint",
   sage: "Sage",
+  "air-blue": "Air freight pale blue · V17",
 };

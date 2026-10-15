@@ -172,12 +172,55 @@ export function StoryDesignControls({
                       ? "Plain article"
                       : id === "paper"
                         ? "Inset paper panel"
-                        : "T03 · Photographic opener"}
+                        : id === "editorial"
+                          ? "T04 · Editorial continuation"
+                          : "T03 · Photographic opener"}
                   </option>
                 ))}
             </select>
           </label>
         ))}
+      </div>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <label>
+          T04 narrative columns
+          <select
+            value={story.editorial?.columns ?? 1}
+            onChange={(e) =>
+              onChange({
+                ...story,
+                editorial: {
+                  showTitle: story.editorial?.showTitle ?? true,
+                  columns: Number(e.target.value) as 1 | 2,
+                },
+              })
+            }
+          >
+            <option value={1}>One column · full-width</option>
+            <option value={2}>Two columns · left then right</option>
+          </select>
+        </label>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={story.editorial?.showTitle ?? true}
+            onChange={(e) =>
+              onChange({
+                ...story,
+                editorial: {
+                  columns: story.editorial?.columns ?? 1,
+                  showTitle: e.target.checked,
+                },
+              })
+            }
+          />
+          Show title, standfirst and byline on T04 opening page
+        </label>
+        <p className="text-xs">
+          T04 keeps the selected column count on continuations. Use block breaks
+          to control column/page starts. Full-width tables below columns require
+          a later approved table region.
+        </p>
       </div>
     </details>
   );

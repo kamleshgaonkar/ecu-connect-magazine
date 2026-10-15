@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Shell, Empty } from "./shell";
 import { CoverControls, StoryVisualControls } from "./visual-controls";
+import { MediaPicker } from "./media-picker";
 import { Preview } from "./preview";
 import {
   IssueDesignControls,
@@ -633,6 +634,8 @@ function StoryEditor({
                 <option value="heading">Heading</option>
                 <option value="quote">Pull quote</option>
                 <option value="list">Bullet list</option>
+                <option value="figure">Figure / photograph</option>
+                <option value="callout">Yellow callout</option>
               </select>
             </label>
             <div className="inline-actions">
@@ -684,6 +687,54 @@ function StoryEditor({
               </button>
             </div>
           </div>
+          <label>
+            Block {i + 1} break before
+            <select
+              value={block.breakBefore ?? "auto"}
+              onChange={(e) =>
+                blockChange({
+                  ...block,
+                  breakBefore: e.target.value as Block["breakBefore"],
+                })
+              }
+            >
+              <option value="auto">Automatic</option>
+              <option value="column">Next T04 column</option>
+              <option value="page">Next page</option>
+            </select>
+          </label>
+          {block.type === "figure" && (
+            <>
+              <MediaPicker
+                label={`Block ${i + 1} figure`}
+                value={block.image}
+                onChange={(image) => blockChange({ ...block, image })}
+              />
+              <label>
+                Block {i + 1} figure height (mm)
+                <input
+                  type="number"
+                  min={20}
+                  max={180}
+                  value={block.figureHeightMm ?? 100}
+                  onChange={(e) =>
+                    blockChange({
+                      ...block,
+                      figureHeightMm: Math.max(
+                        20,
+                        Math.min(180, Number(e.target.value)),
+                      ),
+                    })
+                  }
+                />
+              </label>
+              <small>
+                Choose contain for charts and screenshots. Caption and credit
+                stay with the image. Block text below is an optional additional
+                figure caption.
+              </small>
+            </>
+          )}
           <label>
             <span className="sr-only">Block {i + 1} text</span>
             <textarea

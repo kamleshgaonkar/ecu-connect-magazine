@@ -15,8 +15,18 @@ export const templates = templateIds;
 const blockSchema = z
   .object({
     id: z.string().min(1).max(100),
-    type: z.enum(["paragraph", "heading", "quote", "list"]),
+    type: z.enum([
+      "paragraph",
+      "heading",
+      "quote",
+      "list",
+      "figure",
+      "callout",
+    ]),
     text: z.string().max(20000),
+    image: mediaReferenceSchema.optional(),
+    figureHeightMm: z.number().min(20).max(180).optional(),
+    breakBefore: z.enum(["auto", "column", "page"]).optional(),
   })
   .strict();
 export const issueSchema = z
@@ -75,6 +85,15 @@ export const issueSchema = z
                       .default("inherit"),
                     theme: z.enum(["inherit", ...themeIds]).default("inherit"),
                     media: z.array(mediaReferenceSchema).max(30).default([]),
+                    editorial: z
+                      .object({
+                        columns: z
+                          .union([z.literal(1), z.literal(2)])
+                          .default(1),
+                        showTitle: z.boolean().default(true),
+                      })
+                      .strict()
+                      .optional(),
                     visual: z
                       .object({
                         summary: z.string().max(1000).default(""),

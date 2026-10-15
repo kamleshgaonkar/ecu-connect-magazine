@@ -1,5 +1,11 @@
 # ECU Connect Magazine Builder
 
+## Phase 3C batch 1
+
+Select **T04 · Editorial continuation** for reference-based one/two-column narrative, ordered figure blocks with captions/credits and yellow callouts. Use story appearance controls for column count/title visibility and block controls for explicit page/column breaks. Fixed-block overflow warns and blocks PDF export; text is never automatically reduced. V17's full-width table below columns and T05–T17 are deferred.
+
+See the [reference-mapped plan](docs/phase3c-plan.md), [visual comparison and validation report](docs/phase3c-implementation.md), and [sample PDF](public/previews/ecu-phase3c-editorial.pdf). For an occupied local port, use `npm run dev -- --port 3107`; browser tests accept `ECU_TEST_PORT=3107` and `CHROMIUM_EXECUTABLE_PATH`. Existing Windows/Linux installation instructions below remain applicable.
+
 An initial local editorial workspace built with Next.js App Router, TypeScript and Tailwind CSS. Volume 21 is clearly labeled fictional demonstration content, not ECU Worldwide announcements or approved copy.
 
 ## Run locally

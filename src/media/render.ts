@@ -9,6 +9,7 @@ export function issueMediaReferences(issue: Issue): MediaReference[] {
         story.visual?.hero,
         story.visual?.thumbnail,
         ...story.media,
+        ...story.blocks.map((block) => block.image),
       );
   return references.filter((r): r is MediaReference => Boolean(r));
 }

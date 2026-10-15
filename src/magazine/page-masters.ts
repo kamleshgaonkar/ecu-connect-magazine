@@ -48,7 +48,8 @@ export function createPageMaster(
     const header = document.createElement("header");
     header.className = "section-header";
     header.textContent =
-      master === "opener" && sectionName === "What's Up @ ECU Worldwide"
+      (master === "opener" || master === "editorial") &&
+      sectionName === "What's Up @ ECU Worldwide"
         ? "What's Up @\nECU Worldwide"
         : sectionName;
     page.append(header);

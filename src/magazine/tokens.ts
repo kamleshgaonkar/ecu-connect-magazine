@@ -38,6 +38,12 @@ export type Theme = {
   muted: string;
 };
 export const visualThemes: Record<ThemeId, Theme> = {
+  "air-blue": {
+    background: "#D3E2F9",
+    ink: "#1E1E1E",
+    accent: "#034EA2",
+    muted: "#58595B",
+  },
   "ecu-light": {
     background: "#F0F7FA",
     ink: "#1E1E1E",

@@ -10,6 +10,12 @@ export const templateRegistry: Record<
   TemplateId,
   { label: string; description: string; master: PageMasterId }
 > = {
+  t04: {
+    label: "T04 · Editorial continuation",
+    description:
+      "Reference-based full-width or two-column narrative, figures and yellow callouts.",
+    master: "editorial",
+  },
   opener: {
     label: "T03 · Photographic section opener",
     description:
