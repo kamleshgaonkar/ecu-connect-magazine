@@ -24,6 +24,7 @@ import { StoriesPanel } from "./stories-panel";
 import { reorderMagazine, type StoryDrag } from "../studio/reorder";
 import { SplitWorkspace } from "./split-workspace";
 import { applyStudioLayout } from "../studio/apply-layout";
+import { resolveStoryDesign } from "../magazine/templates";
 import {
   IssueDesignControls,
   SectionDesignControls,
@@ -248,6 +249,21 @@ export function IssueEditor({ issueId }: { issueId: string }) {
       ? section?.stories.find((s) => s.id === view.storyId)
       : undefined;
   const storyIndex = story && section ? section.stories.indexOf(story) : -1;
+  const storyDesign =
+    issue && section && story
+      ? resolveStoryDesign(issue.theme, section, story)
+      : null;
+  const continuationSelected =
+    previewPage?.storyId === story?.id && (previewPage?.index ?? 0) > 0;
+  const paragraphMaster = continuationSelected
+    ? storyDesign?.continuationTemplate
+    : storyDesign?.pageTemplate;
+  const paragraphSpacing =
+    paragraphMaster === "editorial" &&
+    !(story?.pagePair && !continuationSelected)
+      ? "4mm"
+      : "16px";
+
   return (
     <Shell
       editor
@@ -499,6 +515,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                         : null
                     }
                     pageSelectionRequest={previewClick}
+                    paragraphSpacing={paragraphSpacing}
                     sectionName={section.name}
                     index={storyIndex}
                     count={section.stories.length}
@@ -678,6 +695,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
 }
 function StoryEditor({
   story,
+  paragraphSpacing,
   pageIndex,
   sectionName,
   pageSelectionRequest,
@@ -689,6 +707,7 @@ function StoryEditor({
   onBack,
 }: {
   story: Story;
+  paragraphSpacing: string;
   pageIndex: number | null;
   pageSelectionRequest: number;
   sectionName: string;
@@ -778,7 +797,11 @@ function StoryEditor({
         pageIndex={pageIndex}
         onChange={onChange}
       />
-      <StoryContent story={story} onChange={onChange} />
+      <StoryContent
+        story={story}
+        onChange={onChange}
+        paragraphSpacing={paragraphSpacing}
+      />
       <GridEditor
         story={story}
         onChange={onChange}

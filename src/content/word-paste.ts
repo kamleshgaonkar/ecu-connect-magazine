@@ -201,9 +201,11 @@ export function readContentDOM(
         : undefined;
       const heading = /^H[1-6]$/.test(node.tagName);
       const text = items ? items.map(plainRich).join("\n") : plainRich(rich);
-      const mso = /mso-list\s*:/i.test(node.getAttribute("style") ?? "");
+      const mso = node.dataset.wordList === "true";
       const marker = mso
-        ? (text.match(/^\s*(?:[•·▪o]|\d+[.)])\s*/)?.[0] ?? "")
+        ? (text.match(
+            /^[ \t\u00a0]*(?:[•·▪◦‣o\uf0b7\uf0a7]|\d+[.)])[ \t\u00a0]+/,
+          )?.[0] ?? "")
         : "";
       const cleaned = marker ? text.slice(marker.length) : text;
       let remainingMarker = marker.length;
@@ -268,6 +270,104 @@ export function readContentDOM(
   root.childNodes.forEach(visit);
   return blocks;
 }
+/** Paste-only HTML whitespace normalization. Source newlines/tabs are visual
+ * wrapping in normal HTML, not paragraph or soft-break markers. Never infer
+ * paragraph boundaries from line length, margins or visual appearance.
+ */
+function normalizeClipboardHTML(root: HTMLElement) {
+  function preformatted(node: Node) {
+    let element = node instanceof HTMLElement ? node : node.parentElement;
+    while (element && element !== root) {
+      if (
+        element.tagName === "PRE" ||
+        /^(pre|pre-wrap|break-spaces)$/.test(element.style.whiteSpace)
+      )
+        return true;
+      element = element.parentElement;
+    }
+    return false;
+  }
+  for (const node of root.querySelectorAll<HTMLElement>("*")) {
+    delete node.dataset.wordList;
+    if (
+      (node.tagName.toLowerCase() === "o:p" ||
+        /mso-tab-count\s*:/i.test(node.getAttribute("style") ?? "")) &&
+      !node.textContent?.trim() &&
+      !node.querySelector("br")
+    )
+      node.replaceWith(document.createTextNode(" "));
+  }
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text;
+    if (!preformatted(node))
+      node.data = node.data.replace(/[ \t\r\n\f]+/g, " ");
+  }
+  for (const paragraph of root.querySelectorAll<HTMLElement>(
+    "p,div,h1,h2,h3,h4,h5,h6,li,td,th",
+  )) {
+    if (
+      preformatted(paragraph) ||
+      (paragraph.tagName === "DIV" &&
+        paragraph.querySelector("p,div,h1,h2,h3,h4,h5,h6,ul,ol,table"))
+    )
+      continue;
+    const contents = document.createTreeWalker(
+      paragraph,
+      NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+      {
+        acceptNode: (node) =>
+          node.nodeType === Node.TEXT_NODE ||
+          (node instanceof Element && node.tagName === "BR")
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.FILTER_SKIP,
+      },
+    );
+    let previous: Text | null = null;
+    let lineStart = true;
+    while (contents.nextNode()) {
+      const node = contents.currentNode;
+      if (preformatted(node)) {
+        previous = null;
+        lineStart = false;
+        continue;
+      }
+      if (node instanceof HTMLBRElement) {
+        if (previous) previous.data = previous.data.replace(/ +$/, "");
+        previous = null;
+        lineStart = true;
+        continue;
+      }
+      const text = node as Text;
+      if (lineStart) text.data = text.data.replace(/^ +/, "");
+      else if (previous?.data.endsWith(" ") && text.data.startsWith(" "))
+        text.data = text.data.slice(1);
+      if (text.data) {
+        previous = text;
+        lineStart = false;
+      }
+    }
+    if (previous) previous.data = previous.data.replace(/ +$/, "");
+    // Stale list styles/classes alone are insufficient. Require a genuine Word
+    // list declaration (or an explicit marker span) AND a delimited marker.
+    const declaredList = /mso-list\s*:\s*l\d+\b/i.test(
+      paragraph.getAttribute("style") ?? "",
+    );
+    const markerSpan = Array.from(
+      paragraph.querySelectorAll("span[style]"),
+    ).some((span) =>
+      /mso-list\s*:\s*Ignore\b/i.test(span.getAttribute("style") ?? ""),
+    );
+    if (
+      paragraph.tagName === "P" &&
+      (declaredList || markerSpan) &&
+      /^[ \t\u00a0]*(?:[•·▪◦‣o\uf0b7\uf0a7]|\d+[.)])[ \t\u00a0]+/.test(
+        paragraph.textContent ?? "",
+      )
+    )
+      paragraph.dataset.wordList = "true";
+  }
+}
 export function importWordContent(
   html: string,
   text: string,
@@ -291,6 +391,7 @@ export function importWordContent(
       warnings.push(
         "Merged table cells are flattened; all cell text is retained. Review the imported table structure.",
       );
+    normalizeClipboardHTML(parsed.body);
     root.append(...Array.from(parsed.body.childNodes));
   } else if (text.includes("\t")) {
     const table = document.createElement("table");
@@ -362,9 +463,9 @@ export function importWordContent(
   }
   const blocks = readContentDOM(root);
   const wordListIds = new Set(
-    Array.from(root.querySelectorAll<HTMLElement>("[style]"))
-      .filter((node) => /mso-list\s*:/i.test(node.getAttribute("style") ?? ""))
-      .map((node) => node.dataset.storyBlock),
+    Array.from(
+      root.querySelectorAll<HTMLElement>('[data-word-list="true"]'),
+    ).map((node) => node.dataset.storyBlock),
   );
   const merged: Block[] = [];
   for (const block of blocks) {

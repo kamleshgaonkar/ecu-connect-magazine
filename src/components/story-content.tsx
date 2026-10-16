@@ -1,5 +1,11 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { blockSchema, type Block, type Story } from "../domain/issue";
 import {
   newComponent,
@@ -29,9 +35,11 @@ const isComponent = (block: Block) =>
 /** A single editable document. React never resets the caret for an echoed text edit. */
 export function StoryContent({
   story,
+  paragraphSpacing = "16px",
   onChange,
 }: {
   story: Story;
+  paragraphSpacing?: string;
   onChange: (story: Story) => void;
 }) {
   const editor = useRef<HTMLDivElement>(null);
@@ -345,7 +353,11 @@ export function StoryContent({
     setMessage(result.warnings.join(" "));
   }
   return (
-    <section className="story-content-editor" aria-label="Story Content">
+    <section
+      className="story-content-editor"
+      aria-label="Story Content"
+      style={{ "--story-paragraph-gap": paragraphSpacing } as CSSProperties}
+    >
       <style>{contentStyles}</style>
       <h3>Story Content</h3>
       <div
