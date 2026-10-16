@@ -5,6 +5,7 @@ export function previewController(renderId: string) {
     scheduled = false,
     fullscreen = false,
     activePage = 1;
+  let selected: { storyId: string; index: number } | null = null;
   const root = document.getElementById("pages")!;
   const pages = () =>
     Array.from(
@@ -15,6 +16,38 @@ export function previewController(renderId: string) {
   const width = (210 * 96) / 25.4,
     height = (297 * 96) / 25.4;
   let strip: HTMLElement | null = null;
+  function highlight() {
+    for (const page of pages()) {
+      const match =
+        !!selected &&
+        page.dataset.storyId === selected.storyId &&
+        Number(page.dataset.storyPage) === selected.index;
+      page.dataset.editorSelected = String(match);
+      page.style.outline = match ? "2px solid #034EA2" : "";
+      page.style.outlineOffset = match ? "4px" : "";
+    }
+  }
+  root.addEventListener("click", (event) => {
+    if (
+      fullscreen ||
+      !window.__magazineReady ||
+      !(event.target instanceof Element)
+    )
+      return;
+    const page = event.target.closest<HTMLElement>(
+      ".page[data-story-id][data-story-page]",
+    );
+    if (!page || !pages().includes(page)) return;
+    selected = {
+      storyId: page.dataset.storyId!,
+      index: Number(page.dataset.storyPage),
+    };
+    highlight();
+    parent.postMessage(
+      { type: "preview-page-click", renderId, ...selected },
+      "*",
+    );
+  });
   function position() {
     const list = pages();
     activePage =
@@ -39,8 +72,6 @@ export function previewController(renderId: string) {
         type: "preview-position",
         renderId,
         page: activePage,
-        storyId: list[activePage - 1]?.dataset.storyId ?? null,
-        storyPage: Number(list[activePage - 1]?.dataset.storyPage ?? -1),
         zoom: Math.round(scale * 100),
       },
       "*",
@@ -145,6 +176,10 @@ export function previewController(renderId: string) {
       !window.__magazineReady
     )
       return;
+    if (event.data.selection !== undefined) {
+      selected = event.data.selection;
+      highlight();
+    }
     const oldPage = activePage;
     if (typeof event.data.fullscreen === "boolean")
       fullscreen = event.data.fullscreen;

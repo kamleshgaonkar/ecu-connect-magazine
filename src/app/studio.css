@@ -2278,3 +2278,32 @@ html:has(.editor-shell), body:has(.editor-shell) { height: 100%; overflow: hidde
 .background-design-panel .media-picker-actions{flex:1;min-width:160px}
 .background-design-panel .media-picker-fields{gap:8px}
 .background-design-panel .helper{font-size:11px;margin:6px 0}
+/* Expanded background settings only; approved three-column proportions stay unchanged. */
+.background-design-panel{padding:10px 12px;max-height:62vh}
+.background-design-panel label{margin:6px 0;font-size:11px}
+.background-design-panel select{min-height:30px;padding:4px 7px;font-size:12px}
+.background-control-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.background-design-panel .background-range{display:grid;grid-template-columns:98px minmax(50px,1fr) 35px;gap:6px;align-items:center;min-height:25px}
+.background-range output{text-align:right;font-size:11px;font-variant-numeric:tabular-nums}
+.background-design-panel input[type=color]{width:100%;height:25px}
+.background-design-panel .media-picker{padding:6px;margin:6px 0;border-radius:6px}
+.background-design-panel .media-picker-main{flex-wrap:nowrap;align-items:center}
+.background-design-panel .media-picker-thumb{width:48px;height:44px}
+.compact-image-current{display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:11px}
+.compact-image-current span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.background-advanced{border-top:1px solid #eee;margin-top:8px;padding-top:6px}
+.background-advanced summary{font-size:12px;cursor:pointer}
+@media(max-width:500px){.background-control-pair{gap:6px}.background-design-panel .background-range{grid-template-columns:86px minmax(35px,1fr) 32px}.compact-image-current span{max-width:100px}}
+
+.background-type-choices{margin:6px 0;padding:0;border:0}
+.background-type-choices legend{font-size:11px;margin-bottom:4px}
+.background-type-choices [role=group]{display:flex;gap:5px;flex-wrap:wrap}
+.background-type-choices button{border:1px solid #ddd;border-radius:5px;padding:4px 9px;font-size:11px}
+.background-type-choices button[aria-pressed=true]{background:#eef4fb;border-color:#034ea2;color:#034ea2;font-weight:600}
+.background-design-panel .background-contrast{display:grid;grid-template-columns:100px minmax(0,1fr);align-items:center;gap:8px}
+
+/* Opt-in opening-page controls: no workspace or template geometry changes. */
+.compact-story-control{border:1px solid #e5e5e5;border-radius:6px;padding:8px 10px;margin:0 0 12px;font-size:12px}
+.compact-story-control>summary{cursor:pointer;font-weight:600}.compact-story-control>summary small{float:right;font-weight:400;color:#666}
+.compact-control-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.compact-control-fields label{font-size:12px;gap:4px}.compact-control-fields input,.compact-control-fields select{min-height:30px;padding:4px 6px}.compact-control-fields .control-full{grid-column:1/-1}.compact-story-control .muted{font-size:11px;margin:8px 0}.compact-story-control .check{display:flex;align-items:center;gap:6px;margin-top:8px}.compact-story-control .check input{width:auto}
+.compact-control-fields input,.compact-control-fields select{height:32px;min-height:32px}.compact-control-fields input[type=range]{height:24px;min-height:24px;padding:0}.compact-control-fields textarea{height:78px;min-height:65px;padding:6px 8px}.compact-story-control>.text-button{margin-right:12px}

@@ -54,12 +54,18 @@ for (const storyIndex of [0, 1, 2]) {
     for (const [label, value, selector] of [
       ["Headline", "Updated headline", ".story-title"],
       ["Subheadline", "Updated introduction", ".subtitle"],
-      ["Author", "Updated author", ".byline"],
+      ["Author", "Updated author", ".story-author-credit"],
     ]) {
       await page.getByRole("textbox", { name: label, exact: true }).fill(value);
       await expect(opening.locator(selector)).toHaveText(value);
       await page
-        .getByRole("textbox", { name: `${label} on Opening Page`, exact: true })
+        .getByRole("textbox", {
+          name:
+            label === "Author"
+              ? "Author credit override"
+              : `${label} on Opening Page`,
+          exact: true,
+        })
         .fill(`Override ${label}`);
       await expect(opening.locator(selector)).toHaveText(`Override ${label}`);
       await page
@@ -84,11 +90,9 @@ for (const storyIndex of [0, 1, 2]) {
       .getByRole("button", { name: "Opening Page", exact: true })
       .click();
     await page
-      .getByRole("textbox", { name: "Author on Opening Page", exact: true })
+      .getByRole("textbox", { name: "Author credit override", exact: true })
       .fill("");
-    if (storyIndex === 2)
-      await expect(opening.locator(".byline")).toHaveText("");
-    else await expect(opening.locator(".byline")).toHaveCount(0);
+    await expect(opening.locator(".story-author-credit")).toHaveCount(0);
     await page
       .getByRole("button", { name: "Save Magazine", exact: true })
       .click();
@@ -103,16 +107,16 @@ for (const storyIndex of [0, 1, 2]) {
     await expect(opening.locator(".subtitle")).toHaveText(
       "Override Subheadline",
     );
-    if (storyIndex === 2)
-      await expect(opening.locator(".byline")).toHaveText("");
-    else await expect(opening.locator(".byline")).toHaveCount(0);
+    await expect(opening.locator(".story-author-credit")).toHaveCount(0);
     await page
       .getByRole("button", { name: "Index Headline", exact: true })
       .click();
     await page
       .getByRole("button", { name: "Use story author", exact: true })
       .click();
-    await expect(opening.locator(".byline")).toHaveText("Index Author");
+    await expect(opening.locator(".story-author-credit")).toHaveText(
+      "Index Author",
+    );
     await expect(frame.locator(".blank-opening-split")).toHaveCount(1);
     if (storyIndex > 0) {
       await expect(opening).not.toHaveClass(/blank-section-page/);
@@ -165,9 +169,9 @@ test("white opening uses linked fields safely and continuation stays blank", asy
     story.title,
   );
   await expect(page.locator(".blank-opening-white .subtitle")).toHaveCount(0);
-  await expect(page.locator(".blank-opening-white .byline")).toHaveText(
-    "Author",
-  );
+  await expect(
+    page.locator(".blank-opening-white .story-author-credit"),
+  ).toHaveText("Author");
   await expect(page.locator(".blank-continuation")).toHaveCount(0);
   expect(await page.evaluate(() => window.__magazineResult!.warnings)).toEqual(
     [],

@@ -74,7 +74,10 @@ test("basic grid hides content without changing saved layouts, linked fields or 
   for (const label of ["Headline", "Subheadline", "Author"]) {
     await expect(
       builder.getByRole("textbox", {
-        name: `${label} on Opening Page`,
+        name:
+          label === "Author"
+            ? "Author credit override"
+            : `${label} on Opening Page`,
         exact: true,
       }),
     ).toBeVisible();

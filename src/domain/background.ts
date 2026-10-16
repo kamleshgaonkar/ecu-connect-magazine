@@ -4,6 +4,8 @@ const colour = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 /** Optional on existing stories; absence and mode=default preserve the page master. */
 export const backgroundSchema = z
   .object({
+    contrast: z.enum(["auto", "light", "dark", "original"]).optional(),
+    textTreatment: z.enum(["none", "shadow", "backing"]).optional(),
     mode: z.enum(["default", "solid", "gradient", "image"]).default("default"),
     colour: colour.default("#FFFFFF"),
     gradientColour: colour.default("#034EA2"),

@@ -6,6 +6,6 @@ process.env.PLAYWRIGHT_BROWSERS_PATH ??= path.join(
 );
 const config: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
-  serverExternalPackages: ["playwright", "playwright-core"],
+  serverExternalPackages: ["playwright", "playwright-core", "sharp"],
 };
 export default config;

@@ -16,6 +16,7 @@ import {
 import type { Issue } from "../domain/issue";
 import type { LayoutResult } from "../magazine/pagination";
 import { mediaRepository } from "../media/local";
+import { pdfFormData } from "../media/pdf-client";
 import { prepareRenderIssue } from "../media/render";
 import { magazineDocument } from "../magazine/document";
 import { withPreviewControls } from "./preview-document";
@@ -25,12 +26,25 @@ export type PreviewPageSelection = { storyId: string; index: number } | null;
 export function Preview({
   issue,
   activeStoryId,
+  selectedPage,
   onPageSelect,
+  onPageCounts,
 }: {
   issue: Issue;
   activeStoryId?: string;
+  selectedPage?: PreviewPageSelection;
   onPageSelect?: (page: PreviewPageSelection) => void;
+  onPageCounts?: (counts: Record<string, number>) => void;
 }) {
+  const issueRef = useRef(issue);
+  const layoutRef = useRef<LayoutResult | null>(null);
+  useEffect(() => {
+    issueRef.current = issue;
+  }, [issue]);
+  const pageCountsCallback = useRef(onPageCounts);
+  useEffect(() => {
+    pageCountsCallback.current = onPageCounts;
+  }, [onPageCounts]);
   const pageSelectionCallback = useRef(onPageSelect);
   useEffect(() => {
     pageSelectionCallback.current = onPageSelect;
@@ -42,9 +56,16 @@ export function Preview({
   const [touchControls, setTouchControls] = useState(false);
   const fullscreenRef = useRef(false);
   const pageRef = useRef(1);
-  const navigatedStory = useRef<string | undefined>(undefined);
-  const storyPages = useRef<LayoutResult["storyPages"]>({});
-  const selectedStory = useRef(activeStoryId);
+  const selection = activeStoryId
+    ? {
+        storyId: activeStoryId,
+        index: selectedPage?.storyId === activeStoryId ? selectedPage.index : 0,
+      }
+    : null;
+  const selectionRef = useRef(selection);
+  useEffect(() => {
+    selectionRef.current = selection;
+  });
   const [prepared, setPrepared] = useState<{
     issue: Issue | null;
     source: Issue;
@@ -58,6 +79,7 @@ export function Preview({
   const zoomRef = useRef<"fit" | number>("fit");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [exportProgress, setExportProgress] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -94,20 +116,11 @@ export function Preview({
       html: withPreviewControls(magazineDocument(prepared.issue, id), id),
     };
   }, [prepared]);
-  const payload = useMemo(
-    () => (prepared?.issue ? JSON.stringify(prepared.issue) : ""),
-    [prepared],
-  );
-  const tooLarge = useMemo(
-    () => new TextEncoder().encode(payload).length > 1_000_000,
-    [payload],
-  );
   const currentLayout = layout?.renderId === doc.id ? layout : null;
   const updating = prepared?.source !== issue || !currentLayout;
   const ready =
     !updating &&
     !!prepared?.issue &&
-    !tooLarge &&
     !currentLayout?.warnings.length &&
     !prepared?.error;
 
@@ -123,29 +136,31 @@ export function Preview({
       "*",
     );
   }
+  const selectionKey = selection
+    ? `${selection.storyId}:${selection.index}`
+    : "";
   useEffect(() => {
-    selectedStory.current = activeStoryId;
-    if (
-      layout?.renderId !== doc.id ||
-      !activeStoryId ||
-      activeStoryId === navigatedStory.current
-    )
-      return;
-    const destination = layout.storyPages[activeStoryId]?.physicalPage;
-    if (destination) {
-      navigatedStory.current = activeStoryId;
-      frame.current?.contentWindow?.postMessage(
-        {
-          type: "preview-control",
-          renderId: doc.id,
-          page: destination,
-          zoom: zoomRef.current,
-          fullscreen: fullscreenRef.current,
-        },
-        "*",
-      );
-    }
-  }, [activeStoryId, layout, doc.id]);
+    if (layout?.renderId !== doc.id) return;
+    const selected = selectionRef.current;
+    const start = selected && layout.storyPages[selected.storyId]?.physicalPage;
+    const index = selected
+      ? Math.min(
+          selected.index,
+          Math.max(0, (layout.storyPageCounts[selected.storyId] ?? 1) - 1),
+        )
+      : 0;
+    frame.current?.contentWindow?.postMessage(
+      {
+        type: "preview-control",
+        renderId: doc.id,
+        ...(start ? { page: start + index } : {}),
+        selection: selected,
+        zoom: zoomRef.current,
+        fullscreen: fullscreenRef.current,
+      },
+      "*",
+    );
+  }, [selectionKey, layout, doc.id]);
 
   useEffect(() => {
     function receive(event: MessageEvent) {
@@ -181,41 +196,54 @@ export function Preview({
         Array.isArray(event.data.warnings)
       ) {
         const result = event.data as LayoutResult & { renderId: string };
+        if (prepared?.source === issueRef.current)
+          pageCountsCallback.current?.(result.storyPageCounts);
+        layoutRef.current = result;
         setLayout(result);
-        const story = selectedStory.current;
-        const destination =
-          story &&
-          (story !== navigatedStory.current ||
-            storyPages.current[story]?.physicalPage !==
-              result.storyPages[story]?.physicalPage)
-            ? result.storyPages[story]?.physicalPage
-            : undefined;
-        storyPages.current = result.storyPages;
-        if (destination) navigatedStory.current = story;
-        const page = Math.min(result.pages, destination ?? pageRef.current);
+        const selected = selectionRef.current;
+        const start =
+          selected && result.storyPages[selected.storyId]?.physicalPage;
+        const index = selected
+          ? Math.min(
+              selected.index,
+              Math.max(0, (result.storyPageCounts[selected.storyId] ?? 1) - 1),
+            )
+          : 0;
+        const page = Math.min(
+          result.pages,
+          start ? start + index : pageRef.current,
+        );
         frame.current?.contentWindow?.postMessage(
           {
             type: "preview-control",
             renderId: doc.id,
             page,
+            selection: selected,
             zoom: zoomRef.current,
             fullscreen: fullscreenRef.current,
           },
           "*",
         );
       } else if (
+        event.data.type === "preview-page-click" &&
+        !fullscreenRef.current &&
+        prepared?.source === issueRef.current &&
+        typeof event.data.storyId === "string" &&
+        Number.isInteger(event.data.index) &&
+        event.data.index >= 0 &&
+        event.data.index <
+          (layoutRef.current?.storyPageCounts[event.data.storyId] ?? 0)
+      ) {
+        pageSelectionCallback.current?.({
+          storyId: event.data.storyId,
+          index: event.data.index,
+        });
+      } else if (
         event.data.type === "preview-position" &&
         Number.isInteger(event.data.page) &&
         event.data.page >= 1 &&
         Number.isFinite(event.data.zoom)
       ) {
-        pageSelectionCallback.current?.(
-          typeof event.data.storyId === "string" &&
-            Number.isInteger(event.data.storyPage) &&
-            event.data.storyPage >= 0
-            ? { storyId: event.data.storyId, index: event.data.storyPage }
-            : null,
-        );
         pageRef.current = event.data.page;
         setPosition({ page: event.data.page, zoom: event.data.zoom });
       }
@@ -226,7 +254,7 @@ export function Preview({
       "*",
     );
     return () => window.removeEventListener("message", receive);
-  }, [doc.id]);
+  }, [doc.id, prepared?.source]);
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -321,12 +349,19 @@ export function Preview({
     setBusy(true);
     setError("");
     try {
+      const form = await pdfFormData(issue, mediaRepository, setExportProgress);
+      setExportProgress("Rendering PDF…");
       const response = await fetch("/api/export", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: payload,
+        body: form,
       });
-      if (!response.ok) throw new Error((await response.json()).error);
+      if (!response.ok) {
+        const detail = await response.json().catch(() => null);
+        throw new Error(
+          detail?.error ??
+            `PDF server returned HTTP ${response.status}. Check the server/proxy upload and runtime limits and retry.`,
+        );
+      }
       const url = URL.createObjectURL(await response.blob());
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -350,7 +385,6 @@ export function Preview({
   }
   const blocking = !!(
     prepared?.error ||
-    tooLarge ||
     (!updating && currentLayout?.warnings.length)
   );
   const reviewCount =
@@ -366,7 +400,7 @@ export function Preview({
       onClick={download}
     >
       <Download size={17} />
-      {busy ? "Rendering PDF…" : "Export PDF"}
+      {busy ? exportProgress || "Preparing PDF…" : "Export PDF"}
     </button>
   );
   return (
@@ -500,6 +534,15 @@ export function Preview({
           </div>
         </details>
       </div>
+      {currentLayout &&
+        selection &&
+        selection.index >=
+          (currentLayout.storyPageCounts[selection.storyId] ?? 0) && (
+          <p className="layout-status" role="status">
+            The selected story page no longer exists after reflow. Click a page
+            to select it; story edits are retained.
+          </p>
+        )}
       {blocking && (
         <div className="layout-status blocking" role="alert">
           <AlertTriangle size={16} />
@@ -514,13 +557,6 @@ export function Preview({
         <p className="error" role="alert">
           {prepared.error} Your unsaved content is retained; correct it in the
           editor.
-        </p>
-      )}
-      {tooLarge && (
-        <p className="error" role="alert">
-          Your magazine is larger than the 1 MB PDF request limit. Choose
-          smaller image files before exporting. Your images have not been
-          changed.
         </p>
       )}
       {error && (

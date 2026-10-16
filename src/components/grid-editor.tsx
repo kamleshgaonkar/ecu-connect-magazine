@@ -43,14 +43,30 @@ export function GridEditor({
   story,
   onChange,
   structureOnly = false,
+  pageSelection,
+  pageSelectionRequest,
 }: {
   story: Story;
   structureOnly?: boolean;
+  pageSelection?: number | null;
+  pageSelectionRequest?: number;
   onChange: (story: Story) => void;
 }) {
   const [baseGrid] = useState(() => initialGrid(story));
   const completeGrid = story.grid ?? baseGrid;
-  const [editingContinuation, setEditingContinuation] = useState(false);
+  const [manualContinuation, setEditingContinuation] = useState(
+    (pageSelection ?? 0) > 0,
+  );
+  const selectionRequest = `${pageSelection}:${pageSelectionRequest ?? 0}`;
+  const [selectionSeen, setSelectionSeen] = useState(selectionRequest);
+  if (selectionSeen !== selectionRequest) {
+    setSelectionSeen(selectionRequest);
+    if (pageSelection != null) setEditingContinuation(pageSelection > 0);
+  }
+  const editingContinuation =
+    selectionSeen !== selectionRequest && pageSelection != null
+      ? pageSelection > 0
+      : manualContinuation;
   const grid = editingContinuation
     ? { ...completeGrid, rows: completeGrid.continuation }
     : completeGrid;
@@ -276,9 +292,15 @@ export function GridEditor({
             ] as const
           ).map(([field, label, maxLength]) => (
             <label key={field}>
-              {label} on Opening Page
+              {field === "byline"
+                ? "Author credit override"
+                : `${label} on Opening Page`}
               <input
-                aria-label={`${label} on Opening Page`}
+                aria-label={
+                  field === "byline"
+                    ? "Author credit override"
+                    : `${label} on Opening Page`
+                }
                 value={story.openingFields?.[field] ?? story[field]}
                 maxLength={maxLength}
                 onChange={(event) =>

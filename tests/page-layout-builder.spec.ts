@@ -105,7 +105,7 @@ test("linked official fields update live while manual blocks stay independent; o
   await expect(frame.locator(".magazine-grid-cell .subtitle")).toHaveText(
     "Updated official introduction",
   );
-  await expect(frame.locator(".magazine-grid-cell .byline")).toHaveText(
+  await expect(frame.locator(".story-author-credit")).toHaveText(
     "Updated official author",
   );
   await expect(frame.locator(".magazine-grid-cell h1")).toHaveText(

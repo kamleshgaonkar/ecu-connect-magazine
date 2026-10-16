@@ -1,6 +1,8 @@
 # Background Design
 
-Background Design sits below the canonical story metadata fields and above Page Builder. Its compact summary shows the selected page's effective design and whether it inherits the story or has a page override. Customize opens a nonmodal floating panel confined to Column 2; Close, Escape and clicking outside dismiss it.
+Current compact controls, contrast, credits, PDF transport and click-only page selection are documented in [magazine-improvements.md](magazine-improvements.md) and [editor-headline-badge-navigation.md](editor-headline-badge-navigation.md). Validation below records the original background milestone.
+
+Background Design sits below the canonical story metadata fields and above Page Builder. Its compact summary shows the selected page's effective design and whether it inherits the story or has a page override. Customize opens a compact nonmodal floating panel confined to Column 2; Close, Escape and clicking outside dismiss it. Background type buttons are horizontal, paired settings use two columns, and crop/fade strength/text protection live in Advanced.
 
 ## Settings and inheritance
 
@@ -16,13 +18,13 @@ One self-contained helper is serialized into the existing measured magazine docu
 
 Local image selection/upload reuses MediaPicker and the existing IndexedDB media repository. Its optional decorative mode hides caption/credit/description editing only for this background use; other image editors retain their controls. Referenced background bytes join the existing self-contained preview/PDF transport. Missing/undecodable images block export through existing diagnostics; low resolution uses the existing 150 dpi notice. Assets remain local to the browser. No external storage, dependency or export-route change was added.
 
-Limits are unchanged: PNG/JPEG/WebP up to 8 MB per local asset; the export request still has its existing **1 MB total limit**. Large photographs can therefore be saved locally yet require external optimization before PDF export. No silent image resizing is introduced.
+PDF export now uses binary multipart transport and temporary print-quality image optimization; the former 1 MB request cap and 8 MB original-upload cap have been removed. Originals stay unchanged in IndexedDB. See [the current implementation notes](magazine-improvements.md) for transport, local image compatibility, contrast and limitations.
 
 ## Verification and limits
 
 Automated checks exercise old-data compatibility, validation, serialization and asset transport; story inheritance and newly generated continuations; independent ordinal overrides and reset; multiple stories and section ordering; upload, crop/focal point, opacity and directional fades; save/reload; fullscreen selection and PDF image embedding. Synthetic red image fixtures produce screenshots for top/centre/bottom placement in both directions and an eight-page A4 sample PDF. These are verification artwork, not new magazine assets.
 
-The original sample's PDF is byte-identical to the pre-change renderer after normalizing only PDF date metadata (91,595 bytes). Visual checks compare synthetic image fades with the corresponding PDF raster. Text, accents and footer remain above the backgrounds. Print uses Chromium's RGB rendering; CMYK colour management, press bleed and printer-specific output are not implemented. Arbitrary photographs, Windows-local browsers and non-Chromium engines have not been visually verified. Contrast remains the editor's responsibility: existing heading and footer colours are deliberately preserved, even when a chosen background reduces their contrast.
+The original sample's PDF is byte-identical to the pre-change renderer after normalizing only PDF date metadata (91,595 bytes). Visual checks compare synthetic image fades with the corresponding PDF raster. Text, accents and footer remain above the backgrounds. Print uses Chromium's RGB rendering; CMYK colour management, press bleed and printer-specific output are not implemented. Arbitrary photographs, Windows-local browsers and non-Chromium engines have not been visually verified. Text Contrast now provides Auto, Light, Dark and Original modes, with story inheritance and page overrides. Legacy settings without a contrast mode retain Original colours; new or explicitly edited custom backgrounds default to Auto. See the current implementation notes for local sampling and protection limits.
 
 Final validation:
 

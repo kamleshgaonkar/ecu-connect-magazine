@@ -13,9 +13,9 @@ New story fields, blocks and media start empty. No sample content or placeholder
 
 ## Linked Opening Page fields
 
-Every story supports headline, subheadline and author on its Opening Page. The three corresponding inputs in Page Builder initially follow the source fields. Editing one stores only that field in optional `openingFields`; an empty string intentionally suppresses its text. “Use story …” removes that override and resumes synchronization. Original story fields remain unchanged, and Contents always indexes the original headline. Existing linked grid fields also resolve saved display overrides. Continuation pages do not gain automatic story headings.
+Every story supports headline and subheadline on its Opening Page. The existing Author field now supplies a credit at the bottom-left of the final story page, above the footer; it does not repeat in the opening heading. Page Builder retains the display overrides (the author override is labelled Author credit override), initially following the source fields. Editing one stores only that field in optional `openingFields`; an empty string intentionally suppresses its text. “Use story …” removes that override and resumes synchronization. Original story fields remain unchanged, and Contents always indexes the original headline. Existing linked grid fields also resolve saved display overrides. Continuation pages do not gain automatic story headings.
 
-The split opening places these fields in its cream lower area. Page furniture and blank body areas retain their design. Existing visible-overflow diagnostics block PDF export if fixed page content overflows. No three-column UI, stylesheet or PDF export route changes are part of the blank-continuation removal.
+The split opening places headline and subheadline in its cream lower area. The final-page credit uses the reserved gap above the footer, outside article content. Page furniture and blank body areas retain their design. Existing visible-overflow diagnostics block PDF export if fixed page content overflows. No three-column UI, stylesheet or PDF export route changes are part of the blank-continuation removal.
 
 ## Validation
 

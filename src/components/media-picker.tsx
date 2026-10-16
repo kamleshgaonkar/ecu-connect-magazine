@@ -9,12 +9,24 @@ export function MediaPicker({
   value,
   onChange,
   decorative = false,
+  compact = false,
+  showFraming = true,
 }: {
   label: string;
   decorative?: boolean;
+  compact?: boolean;
+  showFraming?: boolean;
   value?: MediaReference;
   onChange: (reference: MediaReference | undefined) => void;
 }) {
+  const [changing, setChanging] = useState(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
@@ -63,6 +75,8 @@ export function MediaPicker({
           }
         : undefined,
     );
+    setChanging(false);
+    window.dispatchEvent(new Event("ecu-media-updated"));
   }
   async function upload(file?: File) {
     if (!file) return;
@@ -71,11 +85,10 @@ export function MediaPicker({
     try {
       if (
         !["image/png", "image/jpeg", "image/webp"].includes(file.type) ||
-        !file.size ||
-        file.size > 8_000_000
+        !file.size
       )
         throw new Error(
-          "Choose a PNG, JPEG or WebP image up to 8 MB. SVG and other formats are unsupported.",
+          "Choose a nonempty PNG, JPEG or WebP image. SVG and other formats are unsupported.",
         );
       const bitmap = await createImageBitmap(file);
       const asset = mediaAssetSchema.parse({
@@ -91,8 +104,10 @@ export function MediaPicker({
         asset,
         bytes: new Uint8Array(await file.arrayBuffer()),
       });
+      if (!mounted.current) return;
       window.dispatchEvent(new Event("ecu-media-updated"));
       setAssets(await mediaRepository.list());
+      setChanging(false);
       latestChange.current({
         assetId: asset.id,
         alt: file.name,
@@ -108,7 +123,9 @@ export function MediaPicker({
     }
   }
   return (
-    <fieldset className="media-picker">
+    <fieldset
+      className={"media-picker" + (compact ? " compact-media-picker" : "")}
+    >
       <legend>{label}</legend>
       <div className="media-picker-main">
         <div className="media-picker-thumb">
@@ -128,42 +145,64 @@ export function MediaPicker({
           )}
         </div>
         <div className="media-picker-actions">
-          <label>
-            Choose an uploaded image
-            <select
-              aria-label={label + " — choose image"}
-              value={value?.assetId ?? ""}
-              onChange={(e) => select(e.target.value)}
-            >
-              <option value="">No image selected</option>
-              {value && !assets.some((a) => a.id === value.assetId) && (
-                <option value={value.assetId}>Missing image</option>
-              )}
-              {assets.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name} ({a.width} × {a.height})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="button secondary upload-button">
-            {busy ? "Saving image…" : "Upload new image"}
-            <input
-              className="sr-only"
-              type="file"
-              aria-label={"Upload " + label.toLowerCase()}
-              accept="image/png,image/jpeg,image/webp"
-              disabled={busy}
-              onChange={(e) => {
-                void upload(e.target.files?.[0]);
-                e.target.value = "";
-              }}
-            />
-          </label>
-          <p className="helper">
-            PNG, JPEG or WebP up to 8 MB, saved in this browser. PDF exports
-            have a 1 MB total limit. Images are never resized automatically.
-          </p>
+          {compact && value && (
+            <div className="compact-image-current">
+              <span>
+                {assets.find((a) => a.id === value.assetId)?.name ??
+                  value.alt ??
+                  "Selected image"}
+              </span>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => setChanging(!changing)}
+                aria-expanded={changing}
+              >
+                Change
+              </button>
+            </div>
+          )}
+          <div hidden={compact && !!value && !changing}>
+            <label>
+              Choose an uploaded image
+              <select
+                aria-label={label + " — choose image"}
+                value={value?.assetId ?? ""}
+                onChange={(e) => {
+                  void select(e.target.value);
+                }}
+              >
+                <option value="">No image selected</option>
+                {value && !assets.some((a) => a.id === value.assetId) && (
+                  <option value={value.assetId}>Missing image</option>
+                )}
+                {assets.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} ({a.width} × {a.height})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="button secondary upload-button">
+              {busy ? "Saving image…" : "Upload new image"}
+              <input
+                className="sr-only"
+                type="file"
+                aria-label={"Upload " + label.toLowerCase()}
+                accept="image/png,image/jpeg,image/webp"
+                disabled={busy}
+                onChange={(e) => {
+                  void upload(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <p className="helper">
+              PNG, JPEG or WebP originals stay in this browser. PDF exports
+              optimize separate print copies; originals are never resized or
+              overwritten.
+            </p>
+          </div>
         </div>
       </div>
       {error && (
@@ -218,51 +257,53 @@ export function MediaPicker({
               </label>
             </div>
           )}
-          <div className="media-picker-fields framing">
-            <label>
-              Fit
-              <select
-                aria-label={label + " fit"}
-                value={value.fit ?? "cover"}
-                onChange={(e) =>
-                  onChange({
-                    ...value,
-                    fit: e.target.value as "cover" | "contain",
-                  })
-                }
-              >
-                <option value="cover">Fill frame / crop</option>
-                <option value="contain">Show complete image</option>
-              </select>
-            </label>
-            {(["x", "y"] as const).map((axis) => (
-              <label key={axis}>
-                {axis === "x" ? "Horizontal" : "Vertical"} position ·{" "}
-                {Math.round(value.focalPoint[axis] * 100)}%
-                <input
-                  type="range"
-                  aria-label={
-                    label +
-                    " " +
-                    (axis === "x" ? "horizontal" : "vertical") +
-                    " position"
-                  }
-                  min={0}
-                  max={100}
-                  value={value.focalPoint[axis] * 100}
+          {showFraming && (
+            <div className="media-picker-fields framing">
+              <label>
+                Fit
+                <select
+                  aria-label={label + " fit"}
+                  value={value.fit ?? "cover"}
                   onChange={(e) =>
                     onChange({
                       ...value,
-                      focalPoint: {
-                        ...value.focalPoint,
-                        [axis]: Number(e.target.value) / 100,
-                      },
+                      fit: e.target.value as "cover" | "contain",
                     })
                   }
-                />
+                >
+                  <option value="cover">Fill frame / crop</option>
+                  <option value="contain">Show complete image</option>
+                </select>
               </label>
-            ))}
-          </div>
+              {(["x", "y"] as const).map((axis) => (
+                <label key={axis}>
+                  {axis === "x" ? "Horizontal" : "Vertical"} position ·{" "}
+                  {Math.round(value.focalPoint[axis] * 100)}%
+                  <input
+                    type="range"
+                    aria-label={
+                      label +
+                      " " +
+                      (axis === "x" ? "horizontal" : "vertical") +
+                      " position"
+                    }
+                    min={0}
+                    max={100}
+                    value={value.focalPoint[axis] * 100}
+                    onChange={(e) =>
+                      onChange({
+                        ...value,
+                        focalPoint: {
+                          ...value.focalPoint,
+                          [axis]: Number(e.target.value) / 100,
+                        },
+                      })
+                    }
+                  />
+                </label>
+              ))}
+            </div>
+          )}
         </>
       )}
     </fieldset>

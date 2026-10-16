@@ -8,10 +8,13 @@ import type { MediaAssetRepository } from "./repository";
 export class IndexedDbMediaAssetRepository implements MediaAssetRepository {
   private open(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open("ecu-connect:media:v1", 1);
+      const request = indexedDB.open("ecu-connect:media:v1");
       request.onupgradeneeded = () =>
         request.result.createObjectStore("assets", { keyPath: "asset.id" });
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        request.result.onversionchange = () => request.result.close();
+        resolve(request.result);
+      };
       request.onerror = () =>
         reject(new Error("Unable to open local image storage."));
     });

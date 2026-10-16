@@ -81,9 +81,10 @@ test("story background inheritance, selected-page overrides, local image fades, 
     editorBounds!.x + editorBounds!.width,
   );
 
-  await panel
-    .getByLabel("Background type", { exact: true })
-    .selectOption("solid");
+  await panel.getByRole("button", { name: "Solid", exact: true }).click();
+  await expect(panel.getByLabel("Text Contrast", { exact: true })).toHaveValue(
+    "auto",
+  );
   await setInput(
     panel.getByLabel("Background colour", { exact: true }),
     "#ddeeff",
@@ -98,8 +99,8 @@ test("story background inheritance, selected-page overrides, local image fades, 
   ).toHaveCount(0);
   await page.screenshot({ path: "test-results/background-design-panel.png" });
   await panel.getByRole("button", { name: "Close Background Design" }).click();
-  // Preview navigation selects the second page of this story, not physical PDF page 2.
-  await page.getByLabel("Preview page", { exact: true }).selectOption("5");
+  // Browsing does not change the editor target; explicitly click the second story page.
+  await pages.nth(1).click({ position: { x: 180, y: 160 } });
   await summary.getByRole("button", { name: "Customize" }).click();
   await expect(panel.locator(".background-override-toggle")).toContainText(
     "Story page 2",
@@ -112,6 +113,7 @@ test("story background inheritance, selected-page overrides, local image fades, 
     panel.getByLabel("Background colour", { exact: true }),
     "#ffdd00",
   );
+  await panel.getByLabel("Text Contrast", { exact: true }).selectOption("dark");
   await expect(pages.nth(1).locator(".page-background")).toHaveCSS(
     "background-color",
     "rgb(255, 221, 0)",
@@ -119,9 +121,7 @@ test("story background inheritance, selected-page overrides, local image fades, 
   await panel
     .getByRole("button", { name: "Story Background", exact: true })
     .click();
-  await panel
-    .getByLabel("Background type", { exact: true })
-    .selectOption("gradient");
+  await panel.getByRole("button", { name: "Gradient", exact: true }).click();
   await setInput(panel.getByLabel("Gradient start colour"), "#ffffff");
   await setInput(panel.getByLabel("Gradient end colour"), "#034ea2");
   await setInput(panel.getByLabel("Gradient direction", { exact: true }), "90");
@@ -137,9 +137,7 @@ test("story background inheritance, selected-page overrides, local image fades, 
     "background-color",
     "rgb(255, 221, 0)",
   );
-  await panel
-    .getByLabel("Background type", { exact: true })
-    .selectOption("image");
+  await panel.getByRole("button", { name: "Image", exact: true }).click();
   const image = await page.evaluate(() => {
     const canvas = document.createElement("canvas");
     canvas.width = 1600;
@@ -166,6 +164,7 @@ test("story background inheritance, selected-page overrides, local image fades, 
   await setInput(panel.getByLabel("Image opacity", { exact: true }), "75");
   await panel.getByLabel("Fade direction", { exact: true }).selectOption("up");
   await setInput(panel.getByLabel("Fade start", { exact: true }), "20");
+  await panel.getByText("Advanced", { exact: true }).click();
   await setInput(panel.getByLabel("Fade strength", { exact: true }), "100");
   await setInput(
     panel.getByLabel("Fade-to colour", { exact: true }),
@@ -192,6 +191,10 @@ test("story background inheritance, selected-page overrides, local image fades, 
   const stored = await save(page);
   expect(stored.sections[0].stories[1].blocks).toEqual(story.blocks);
   expect(stored.sections[0].stories[1].title).toBe(story.title);
+  expect(stored.sections[0].stories[1].background!.contrast).toBe("auto");
+  expect(stored.sections[0].stories[1].pageBackgrounds!["1"].contrast).toBe(
+    "dark",
+  );
   await page.reload();
   await ready(page);
   await expect(pages.nth(0).locator(".background-photo")).toHaveCSS(
@@ -220,6 +223,7 @@ test("story background inheritance, selected-page overrides, local image fades, 
   await page
     .getByRole("button", { name: "Close full-screen preview", exact: true })
     .press("Enter");
+  await pages.nth(1).click({ position: { x: 180, y: 160 } });
   await summary.getByRole("button", { name: "Customize" }).click();
   await expect(panel.locator(".background-panel-heading")).toHaveText(
     /Page Override · Story page 2/,
@@ -232,7 +236,7 @@ test("story background inheritance, selected-page overrides, local image fades, 
   // Send the persisted issue with bytes from the same IndexedDB transport used by the UI.
   const transport: Issue = await page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve) => {
-      const r = indexedDB.open("ecu-connect:media:v1", 1);
+      const r = indexedDB.open("ecu-connect:media:v1");
       r.onsuccess = () => resolve(r.result);
     });
     const rows = await new Promise<

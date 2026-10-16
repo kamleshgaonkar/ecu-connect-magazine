@@ -285,7 +285,7 @@ test("new editor image controls remain usable on mobile and unsupported uploads 
   ).toBe(true);
 });
 
-test("large local uploads remain previewable but the unchanged PDF request cap is explicit", async ({
+test("large local uploads remain previewable and export above the old 1 MB cap", async ({
   page,
 }) => {
   await page.goto("/");
@@ -315,11 +315,20 @@ test("large local uploads remain previewable but the unchanged PDF request cap i
   await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   await expect(
     page.getByRole("alert").filter({ hasText: "1 MB PDF request limit" }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await expect(
     page.frameLocator("iframe").locator(".cover-photo"),
   ).toHaveAttribute("src", /^data:image/);
-  await expect(
-    page.getByRole("button", { name: "Export PDF", exact: true }),
-  ).toBeDisabled();
+  const exportButton = page.getByRole("button", {
+    name: "Export PDF",
+    exact: true,
+  });
+  await expect(exportButton).toBeEnabled();
+  const result = page.waitForEvent("download");
+  await exportButton.click();
+  const download = await result;
+  const { readFile } = await import("node:fs/promises");
+  const pdf = await readFile((await download.path())!);
+  expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+  expect(pdf.toString("latin1")).toContain("/Subtype /Image");
 });

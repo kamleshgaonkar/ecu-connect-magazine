@@ -46,6 +46,15 @@ export function flowGridStory(
   }
   function placement(block: LayoutBlock): HTMLElement {
     if (block.kind === "linked") {
+      if (
+        block.source === "author" ||
+        (block.source === "headline" &&
+          (story.headlineLayout || story.badge?.enabled))
+      ) {
+        const marker = document.createElement("span");
+        marker.hidden = true; // Preserve the saved binding; its text is now final-page furniture.
+        return marker;
+      }
       const text =
         block.source === "headline"
           ? (story.openingFields?.title ?? story.title)

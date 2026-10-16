@@ -1,3 +1,5 @@
+import type { applyHeadlineLayout, createStoryBadge } from "./headline";
+import type { applyTextContrast } from "./contrast";
 import type { applyPageBackground } from "./background";
 import type { flowGridStory } from "./grid-flow";
 import type { RenderModel } from "./templates";
@@ -8,12 +10,14 @@ import type {
 } from "./page-masters";
 import type { createMediaImage } from "./media-image";
 import type { printedFolio } from "./folios";
+import type { MediaReference } from "../domain/media";
 import type { PageMasterId } from "../domain/design";
 export type LayoutResult = {
   pages: number;
   warnings: string[];
   notices: string[];
   storyPages: Record<string, { physicalPage: number; folio: number }>;
+  storyPageCounts: Record<string, number>;
 };
 declare global {
   interface Window {
@@ -30,6 +34,9 @@ export async function renderMagazine(
   maxPages: number,
   renderId: string,
   background: typeof applyPageBackground,
+  contrast: typeof applyTextContrast,
+  headlineLayout: typeof applyHeadlineLayout,
+  storyBadge: typeof createStoryBadge,
   gridFlow?: typeof flowGridStory,
 ) {
   const { issue, stories } = model;
@@ -39,6 +46,7 @@ export async function renderMagazine(
     "Bundled SIL OFL Poppins and Bebas Neue are used. Bebas Neue substitutes for licensed Impact and Bebas Neue Bold; exact original typography is not claimed.",
   ];
   const storyPages: LayoutResult["storyPages"] = {};
+  const storyPageCounts: Record<string, number> = {};
   let page!: HTMLElement, body!: HTMLElement;
   let narrativeColumns: HTMLElement[] = [];
   let narrativeColumn = 0;
@@ -50,6 +58,7 @@ export async function renderMagazine(
       warnings: [...new Set(warnings)],
       notices: [...new Set(notices)],
       storyPages,
+      storyPageCounts,
     };
     window.__magazineResult = r;
     window.__magazineReady = true;
@@ -143,6 +152,26 @@ export async function renderMagazine(
     );
     root.append(built.page);
     return built;
+  }
+  function storyFigure(reference: MediaReference) {
+    const figure = el("figure", "story-media");
+    figure.append(
+      mediaImage(
+        reference,
+        issue.renderAssets ?? [],
+        "story-photo",
+        "Missing story image",
+      ),
+    );
+    if (reference.caption || reference.credit)
+      figure.append(
+        el(
+          "figcaption",
+          "",
+          [reference.caption, reference.credit].filter(Boolean).join(" · "),
+        ),
+      );
+    return figure;
   }
   function fresh(continued = false) {
     const master = continued
@@ -320,6 +349,8 @@ export async function renderMagazine(
     for (const item of stories) {
       const row = el("div", "toc-row");
       const label = el("div", "toc-story");
+      const badge = storyBadge(item.story, true);
+      if (badge) label.append(badge);
       if (!item.story.pagePair || item.story.title)
         label.append(el("span", "toc-story-title", item.story.title));
       if (item.story.visual?.summary)
@@ -408,12 +439,20 @@ export async function renderMagazine(
         for (const [field, tag, className] of [
           ["title", "h1", "story-title"],
           ["subtitle", "p", "subtitle"],
-          ["byline", "p", "byline"],
         ] as const) {
-          const value = item.story.openingFields?.[field] ?? item.story[field];
-          if (value) heading.append(el(tag, className, value));
+          const value =
+            field === "title"
+              ? (item.story.headlineLayout?.manualText ??
+                item.story.openingFields?.title ??
+                item.story.title)
+              : (item.story.openingFields?.[field] ?? item.story[field]);
+          if (value || (field === "title" && item.story.badge?.enabled))
+            heading.append(el(tag, className, value));
         }
         if (heading.childElementCount) body.append(heading);
+        headlineLayout(page, item.story, storyBadge, (message) =>
+          warnings.push(message),
+        );
         const physicalPage = root.children.length;
         const folio = folioForPage(physicalPage, "article", frontMatterPages)!;
         storyPages[item.story.id] = { physicalPage, folio };
@@ -427,9 +466,22 @@ export async function renderMagazine(
       const physicalPage = root.children.length;
       const folio = folioForPage(physicalPage, "article", frontMatterPages)!;
       storyPages[item.story.id] = { physicalPage, folio };
+      const openingBackground =
+        item.story.pageBackgrounds?.["0"] ?? item.story.background;
+      const hasHero =
+        item.pageTemplate === "opener" &&
+        (!openingBackground || openingBackground.mode === "default");
+      const mediaBeforeHeadline =
+        item.story.headlineLayout?.placement === "below" &&
+        item.story.media.length > 0 &&
+        openingBackground?.mode !== "image" &&
+        !hasHero;
+      if (mediaBeforeHeadline) body.append(storyFigure(item.story.media[0]));
       if (
         item.pageTemplate !== "editorial" ||
-        item.story.editorial?.showTitle !== false
+        item.story.editorial?.showTitle !== false ||
+        item.story.headlineLayout ||
+        item.story.badge?.enabled
       ) {
         const heading = el("div", "story-heading");
         const linked = new Set(
@@ -441,38 +493,39 @@ export async function renderMagazine(
             ),
           ),
         );
-        const title = item.story.openingFields?.title ?? item.story.title;
+        const title =
+          item.story.headlineLayout?.manualText ??
+          item.story.openingFields?.title ??
+          item.story.title;
         const subtitle =
           item.story.openingFields?.subtitle ?? item.story.subtitle;
-        const byline = item.story.openingFields?.byline ?? item.story.byline;
-        if (!linked.has("headline") && title)
+        if (
+          (!linked.has("headline") ||
+            item.story.headlineLayout ||
+            item.story.badge?.enabled) &&
+          (title || item.story.badge?.enabled)
+        )
           heading.append(el("h2", "story-title", title));
         if (subtitle && !linked.has("introduction"))
           heading.append(el("p", "subtitle", subtitle));
-        if (byline && !linked.has("author"))
-          heading.append(el("p", "byline", byline));
-        add(heading, true);
+        if (item.story.headlineLayout || item.story.badge?.enabled) {
+          body.append(heading);
+          headlineLayout(page, item.story, storyBadge, (message) =>
+            warnings.push(message),
+          );
+          if (!fits())
+            warnings.push(
+              "Opening headline exceeds available space: " +
+                item.story.title +
+                ". Text remains visible; adjust headline layout.",
+            );
+        } else add(heading, true);
       }
       if (item.pageTemplate === "opener" && !item.story.visual?.hero)
         notices.push("No section photograph selected: " + item.sectionName);
-      for (const reference of item.story.media) {
-        const figure = el("figure", "story-media");
-        figure.append(
-          mediaImage(
-            reference,
-            issue.renderAssets ?? [],
-            "story-photo",
-            "Missing story image",
-          ),
-        );
-        if (reference.caption || reference.credit)
-          figure.append(
-            el(
-              "figcaption",
-              "",
-              [reference.caption, reference.credit].filter(Boolean).join(" · "),
-            ),
-          );
+      for (const [index, reference] of item.story.media.entries()) {
+        if (mediaBeforeHeadline && index === 0) continue;
+        const figure = storyFigure(reference);
         body.append(figure);
         if (!fits()) {
           figure.remove();
@@ -595,6 +648,20 @@ export async function renderMagazine(
       for (const entry of entries.filter((e) => e.id === item.story.id))
         entry.number.textContent = String(folio).padStart(2, "0");
     }
+    // Use the existing author field/override, once, in the final generated story page's furniture gap.
+    for (const { story } of stories) {
+      const author = (story.openingFields?.byline ?? story.byline)
+        .split("|")
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .join(" | ");
+      if (!author) continue;
+      const pages = Array.from(root.children).filter(
+        (page) => (page as HTMLElement).dataset.storyId === story.id,
+      );
+      const last = pages.at(-1);
+      if (last) last.append(el("div", "story-author-credit", author));
+    }
     // Story-relative positions survive issue/section reordering and front-matter changes.
     const pageCounts = new Map<string, number>();
     for (const page of root.querySelectorAll<HTMLElement>(
@@ -603,6 +670,7 @@ export async function renderMagazine(
       const storyId = page.dataset.storyId!;
       const index = pageCounts.get(storyId) ?? 0;
       pageCounts.set(storyId, index + 1);
+      storyPageCounts[storyId] = index + 1;
       page.dataset.storyPage = String(index);
       const story = stories.find((item) => item.story.id === storyId)!.story;
       const override = story.pageBackgrounds?.[String(index)];
@@ -712,6 +780,21 @@ export async function renderMagazine(
             `Page ${i + 1} T04 column overflows. Shorten the fixed block or use an approved full-width T04 continuation. Export is blocked.`,
           );
       }
+      const author = p.querySelector<HTMLElement>(".story-author-credit");
+      if (author) {
+        const authorRect = author.getBoundingClientRect();
+        const footerTop =
+          footer?.getBoundingClientRect().top ??
+          p.getBoundingClientRect().bottom - 8;
+        if (
+          authorRect.bottom > footerTop - 2 ||
+          author.scrollWidth > author.clientWidth + 1 ||
+          (b && b.getBoundingClientRect().bottom > authorRect.top)
+        )
+          warnings.push(
+            `Page ${i + 1} author credit overlaps content or footer. Shorten the credit; text remains visible and export is blocked.`,
+          );
+      }
       for (const credit of p.querySelectorAll<HTMLElement>(".photo-credit")) {
         if (
           credit.scrollWidth > credit.clientWidth + 1 ||
@@ -742,6 +825,17 @@ export async function renderMagazine(
           `Page ${i + 1} footer exceeds its reserved space. Shorten edition details or hide the footer.`,
         );
     });
+    for (const p of root.querySelectorAll<HTMLElement>(
+      ":scope > .page[data-story-id]",
+    )) {
+      const story = stories.find(
+        (item) => item.story.id === p.dataset.storyId,
+      )!.story;
+      contrast(
+        p,
+        story.pageBackgrounds?.[p.dataset.storyPage!] ?? story.background,
+      );
+    }
     result();
   } catch (error) {
     warnings.push(

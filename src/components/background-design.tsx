@@ -53,6 +53,8 @@ export function BackgroundDesign({
   }, [open]);
   function update(patch: Partial<Design>) {
     const next = { ...design, ...patch };
+    if (next.mode !== "default" && next.contrast === undefined)
+      next.contrast = "auto";
     if (editingPage && key !== null)
       onChange({
         ...story,
@@ -92,8 +94,8 @@ export function BackgroundDesign({
     field: "coverage" | "opacity" | "fadeStart" | "fadeStrength",
     min = 0,
   ) => (
-    <label>
-      {label} · {design[field]}%
+    <label className="background-range">
+      <span>{label}</span>
       <input
         aria-label={label}
         type="range"
@@ -102,6 +104,7 @@ export function BackgroundDesign({
         value={design[field]}
         onChange={(e) => update({ [field]: Number(e.target.value) })}
       />
+      <output>{design[field]}%</output>
     </label>
   );
   return (
@@ -202,35 +205,53 @@ export function BackgroundDesign({
               </button>
             </div>
           )}
-          <label>
-            Background type
+          <fieldset className="background-type-choices">
+            <legend>Background type</legend>
+            <div role="group" aria-label="Background type">
+              {(
+                [
+                  ["default", "Original"],
+                  ["solid", "Solid"],
+                  ["gradient", "Gradient"],
+                  ["image", "Image"],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  type="button"
+                  key={mode}
+                  className="text-button"
+                  aria-pressed={design.mode === mode}
+                  onClick={() => update({ mode })}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <label className="background-contrast">
+            Text Contrast
             <select
-              aria-label="Background type"
-              value={design.mode}
+              aria-label="Text Contrast"
+              value={design.contrast ?? "original"}
               onChange={(e) =>
-                update({ mode: e.target.value as Design["mode"] })
+                update({ contrast: e.target.value as Design["contrast"] })
               }
             >
-              <option value="default">
-                Default original magazine background
-              </option>
-              <option value="solid">Solid colour</option>
-              <option value="gradient">Gradient</option>
-              <option value="image">Background image</option>
+              <option value="auto">Auto</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="original">Original</option>
             </select>
           </label>
-          {design.mode !== "default" &&
-            colour(
-              design.mode === "gradient"
-                ? "Gradient start colour"
-                : "Background colour",
-              "colour",
-            )}
+          {design.mode === "solid" && colour("Background colour", "colour")}
           {design.mode === "gradient" && (
             <>
-              {colour("Gradient end colour", "gradientColour")}
-              <label>
-                Gradient direction · {design.direction}°
+              <div className="background-control-pair">
+                {colour("Gradient start colour", "colour")}
+                {colour("Gradient end colour", "gradientColour")}
+              </div>
+              <label className="background-range">
+                <span>Direction</span>
                 <input
                   type="range"
                   aria-label="Gradient direction"
@@ -241,60 +262,162 @@ export function BackgroundDesign({
                     update({ direction: Number(e.target.value) })
                   }
                 />
+                <output>{design.direction}°</output>
               </label>
               <p className="helper">
-                0° bottom to top · 90° left to right · 180° top to bottom · 270°
-                right to left
+                0° up · 90° right · 180° down · 270° left
               </p>
             </>
+          )}
+          {design.mode !== "image" && (
+            <details className="background-advanced">
+              <summary>Advanced</summary>
+              <label>
+                Text protection
+                <select
+                  aria-label="Text protection"
+                  value={design.textTreatment ?? "backing"}
+                  onChange={(e) =>
+                    update({
+                      textTreatment: e.target.value as Design["textTreatment"],
+                    })
+                  }
+                >
+                  <option value="backing">Subtle backing when needed</option>
+                  <option value="shadow">Subtle shadow when needed</option>
+                  <option value="none">Colour only</option>
+                </select>
+              </label>
+            </details>
           )}
           {design.mode === "image" && (
             <>
               <MediaPicker
+                key={editingPage ? `page:${key}` : "story"}
                 label="Background image"
                 decorative
+                compact
+                showFraming={false}
                 value={design.image}
                 onChange={(image) => update({ image })}
               />
-              <label>
-                Image placement
-                <select
-                  aria-label="Image placement"
-                  value={design.placement}
-                  onChange={(e) =>
-                    update({ placement: e.target.value as Design["placement"] })
-                  }
-                >
-                  <option value="top">Top</option>
-                  <option value="centre">Centre</option>
-                  <option value="bottom">Bottom</option>
-                </select>
-              </label>
+              <div className="background-control-pair">
+                <label>
+                  Image placement
+                  <select
+                    aria-label="Image placement"
+                    value={design.placement}
+                    onChange={(e) =>
+                      update({
+                        placement: e.target.value as Design["placement"],
+                      })
+                    }
+                  >
+                    <option value="top">Top</option>
+                    <option value="centre">Centre</option>
+                    <option value="bottom">Bottom</option>
+                  </select>
+                </label>
+                <label>
+                  Fade direction
+                  <select
+                    aria-label="Fade direction"
+                    value={design.fadeDirection}
+                    onChange={(e) =>
+                      update({
+                        fadeDirection: e.target
+                          .value as Design["fadeDirection"],
+                      })
+                    }
+                  >
+                    <option value="down">Top to bottom</option>
+                    <option value="up">Bottom to top</option>
+                  </select>
+                </label>
+              </div>
               {range("Image coverage", "coverage", 1)}
               {range("Image opacity", "opacity")}
-              <label>
-                Fade direction
-                <select
-                  aria-label="Fade direction"
-                  value={design.fadeDirection}
-                  onChange={(e) =>
-                    update({
-                      fadeDirection: e.target.value as Design["fadeDirection"],
-                    })
-                  }
-                >
-                  <option value="down">Top to bottom</option>
-                  <option value="up">Bottom to top</option>
-                </select>
-              </label>
               {range("Fade start", "fadeStart")}
-              {range("Fade strength", "fadeStrength")}
-              {colour("Fade-to colour", "fadeColour")}
-              <p className="helper">
-                For a seamless edge, match the fade-to and background colours
-                and use 100% fade strength. Top images usually fade down; bottom
-                images usually fade up.
-              </p>
+              <div className="background-control-pair">
+                {colour("Background colour", "colour")}
+                {colour("Fade-to colour", "fadeColour")}
+              </div>
+              <details className="background-advanced">
+                <summary>Advanced</summary>
+                <label>
+                  Text protection
+                  <select
+                    aria-label="Text protection"
+                    value={design.textTreatment ?? "backing"}
+                    onChange={(e) =>
+                      update({
+                        textTreatment: e.target
+                          .value as Design["textTreatment"],
+                      })
+                    }
+                  >
+                    <option value="backing">Subtle backing when needed</option>
+                    <option value="shadow">Subtle shadow when needed</option>
+                    <option value="none">Colour only</option>
+                  </select>
+                </label>
+                {design.image && (
+                  <>
+                    <label>
+                      Image fit
+                      <select
+                        aria-label="Background image fit"
+                        value={design.image.fit ?? "cover"}
+                        onChange={(e) =>
+                          update({
+                            image: {
+                              ...design.image!,
+                              fit: e.target.value as "cover" | "contain",
+                            },
+                          })
+                        }
+                      >
+                        <option value="cover">Fill frame / crop</option>
+                        <option value="contain">Show complete image</option>
+                      </select>
+                    </label>
+                    {(["x", "y"] as const).map((axis) => (
+                      <label className="background-range" key={axis}>
+                        <span>
+                          {axis === "x" ? "Horizontal crop" : "Vertical crop"}
+                        </span>
+                        <input
+                          type="range"
+                          aria-label={`Background image ${axis === "x" ? "horizontal" : "vertical"} position`}
+                          min={0}
+                          max={100}
+                          value={design.image!.focalPoint[axis] * 100}
+                          onChange={(e) =>
+                            update({
+                              image: {
+                                ...design.image!,
+                                focalPoint: {
+                                  ...design.image!.focalPoint,
+                                  [axis]: Number(e.target.value) / 100,
+                                },
+                              },
+                            })
+                          }
+                        />
+                        <output>
+                          {Math.round(design.image!.focalPoint[axis] * 100)}%
+                        </output>
+                      </label>
+                    ))}
+                  </>
+                )}
+                {range("Fade strength", "fadeStrength")}
+                <p className="helper">
+                  For a seamless edge, match the fade-to and background colours
+                  at 100% strength. Top images usually fade down; bottom images
+                  usually fade up.
+                </p>
+              </details>
             </>
           )}
         </div>

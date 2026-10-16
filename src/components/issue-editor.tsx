@@ -15,6 +15,7 @@ import {
 import { Shell, Empty } from "./shell";
 import { CoverControls, StoryVisualControls } from "./visual-controls";
 import { Preview, type PreviewPageSelection } from "./preview";
+import { HeadlineControls, StoryBadgeControls } from "./headline-controls";
 import { BackgroundDesign } from "./background-design";
 import { GridEditor } from "./grid-editor";
 import { toggleMagazineVisibility } from "../studio/visibility";
@@ -68,12 +69,24 @@ export function IssueEditor({ issueId }: { issueId: string }) {
   const router = useRouter();
   const [previewPage, setPreviewPage] = useState<PreviewPageSelection>(null);
   function selectPreviewPage(next: PreviewPageSelection) {
+    if (!next || !issue) return;
+    const target = issue.sections.find(
+      (s) =>
+        s.enabled && s.stories.some((t) => t.id === next.storyId && t.enabled),
+    );
+    const selected = target?.stories.find((t) => t.id === next.storyId);
+    if (!target || !selected) return;
+    setView({ kind: "story", sectionId: target.id, storyId: selected.id });
+    setActiveStory(selected.id);
+    setPreviewClick((value) => value + 1);
     setPreviewPage((previous) =>
       previous?.storyId === next?.storyId && previous?.index === next?.index
         ? previous
         : next,
     );
   }
+  const [pageCounts, setPageCounts] = useState<Record<string, number>>({});
+  const [previewClick, setPreviewClick] = useState(0);
   const [issue, setIssue] = useState<Issue | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
@@ -206,6 +219,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
     );
   }
   function openStory(target: Section, story: Story) {
+    setPreviewPage({ storyId: story.id, index: 0 });
     setView({ kind: "story", sectionId: target.id, storyId: story.id });
     setActiveStory(story.enabled && target.enabled ? story.id : undefined);
   }
@@ -310,6 +324,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                   sectionId={section?.id}
                   storyId={story?.id}
                   details={view.kind === "details"}
+                  previewClick={previewClick}
                   onDetails={() => setView({ kind: "details" })}
                   onSection={openSection}
                   onStory={openStory}
@@ -381,7 +396,9 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                 <Preview
                   issue={issue}
                   activeStoryId={activeStory}
+                  selectedPage={previewPage}
                   onPageSelect={selectPreviewPage}
+                  onPageCounts={setPageCounts}
                 />
               }
             >
@@ -454,10 +471,12 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                     key={story.id}
                     story={story}
                     pageIndex={
-                      previewPage?.storyId === story.id
+                      previewPage?.storyId === story.id &&
+                      previewPage.index < (pageCounts[story.id] ?? 0)
                         ? previewPage.index
                         : null
                     }
+                    pageSelectionRequest={previewClick}
                     sectionName={section.name}
                     index={storyIndex}
                     count={section.stories.length}
@@ -639,6 +658,7 @@ function StoryEditor({
   story,
   pageIndex,
   sectionName,
+  pageSelectionRequest,
   index,
   count,
   onChange,
@@ -648,6 +668,7 @@ function StoryEditor({
 }: {
   story: Story;
   pageIndex: number | null;
+  pageSelectionRequest: number;
   sectionName: string;
   index: number;
   count: number;
@@ -707,6 +728,7 @@ function StoryEditor({
           onChange={(e) => onChange({ ...story, title: e.target.value })}
         />
       </label>
+      <HeadlineControls story={story} onChange={onChange} />
       <label>
         Subheadline
         <textarea
@@ -717,13 +739,14 @@ function StoryEditor({
           onChange={(e) => onChange({ ...story, subtitle: e.target.value })}
         />
       </label>
+      <StoryBadgeControls story={story} onChange={onChange} />
       <div className="story-meta-row">
         <label>
           Author
           <input
             value={story.byline}
             maxLength={150}
-            placeholder="Author or editorial team"
+            placeholder="Name | Email"
             onChange={(e) => onChange({ ...story, byline: e.target.value })}
           />
         </label>
@@ -733,7 +756,13 @@ function StoryEditor({
         pageIndex={pageIndex}
         onChange={onChange}
       />
-      <GridEditor story={story} onChange={onChange} structureOnly />
+      <GridEditor
+        story={story}
+        onChange={onChange}
+        structureOnly
+        pageSelection={pageIndex}
+        pageSelectionRequest={pageSelectionRequest}
+      />
       {/* Keep advanced editors mounted but hidden for later restoration. */}
       <div hidden>
         <div className="story-options">

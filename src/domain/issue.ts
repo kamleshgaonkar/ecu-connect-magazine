@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { backgroundSchema, pageBackgroundsSchema } from "./background";
+import { headlineLayoutSchema, storyBadgeSchema } from "./headline";
 import { gridSchema } from "./grid";
 import { templateIds, pageMasterIds, themeIds } from "./design";
 import { mediaReferenceSchema, renderAssetSchema } from "./media";
@@ -47,7 +48,7 @@ export const issueSchema = z
       })
       .strict()
       .optional(),
-    renderAssets: z.array(renderAssetSchema).max(100).optional(),
+    renderAssets: z.array(renderAssetSchema).optional(),
     furniture: z
       .object({
         header: z.boolean().default(true),
@@ -117,6 +118,8 @@ export const issueSchema = z
                     background: backgroundSchema.optional(),
                     pageBackgrounds: pageBackgroundsSchema.optional(),
                     pagePair: z.enum(["white", "split"]).optional(),
+                    headlineLayout: headlineLayoutSchema.optional(),
+                    badge: storyBadgeSchema.optional(),
                     openingFields: z
                       .object({
                         title: z.string().max(200).optional(),

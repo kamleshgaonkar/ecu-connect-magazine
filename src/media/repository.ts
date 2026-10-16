@@ -28,7 +28,7 @@ export class MemoryMediaAssetRepository implements MediaAssetRepository {
     const asset = mediaAssetSchema.parse(data.asset);
     if (asset.byteLength !== data.bytes.byteLength)
       throw new Error("Asset byte length does not match its metadata.");
-    this.assets.set(asset.id, { asset, bytes: data.bytes.slice() });
+    this.assets.set(asset.id, { asset, bytes: new Uint8Array(data.bytes) });
   }
   async remove(id: string) {
     this.assets.delete(id);

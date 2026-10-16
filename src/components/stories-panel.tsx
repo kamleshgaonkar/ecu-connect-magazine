@@ -42,6 +42,7 @@ export function StoriesPanel({
   sectionId,
   storyId,
   details,
+  previewClick,
   onDetails,
   onSection,
   onStory,
@@ -55,6 +56,7 @@ export function StoriesPanel({
   sectionId?: string;
   storyId?: string;
   details: boolean;
+  previewClick?: number;
   onDetails: () => void;
   onSection: (s: Section) => void;
   onStory: (s: Section, story: Story) => void;
@@ -73,6 +75,18 @@ export function StoriesPanel({
   const [closed, setClosed] = useState<Set<string>>(new Set()),
     [opened, setOpened] = useState<Set<string>>(new Set()),
     [sectionType, setSectionType] = useState<string>(sectionNames[0]);
+  const [lastPreviewClick, setLastPreviewClick] = useState(previewClick);
+  if (lastPreviewClick !== previewClick) {
+    setLastPreviewClick(previewClick);
+    if (sectionId) {
+      setClosed((value) => {
+        const next = new Set(value);
+        next.delete(sectionId);
+        return next;
+      });
+      setOpened((value) => new Set(value).add(sectionId));
+    }
+  }
   const isExpanded = (id: string) =>
     !closed.has(id) && (opened.has(id) || sectionId === id);
   // Freeze current expansion on pickup; moving a selected story must not open or close sections.

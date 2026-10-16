@@ -2,11 +2,11 @@ import { z } from "zod";
 export const mediaAssetSchema = z
   .object({
     id: z.string().min(1).max(100),
-    name: z.string().min(1).max(200),
+    name: z.string().min(1).max(1024),
     mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]),
     width: z.number().int().positive().max(20000),
     height: z.number().int().positive().max(20000),
-    byteLength: z.number().int().positive().max(8_000_000),
+    byteLength: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
   })
   .strict();
 export const mediaReferenceSchema = z
@@ -32,7 +32,6 @@ export const renderAssetSchema = z
     asset: mediaAssetSchema,
     dataUrl: z
       .string()
-      .max(11_000_000)
       .regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/),
   })
   .strict()
