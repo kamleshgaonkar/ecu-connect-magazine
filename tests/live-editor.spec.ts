@@ -4,9 +4,9 @@ import { sampleIssue } from "../src/domain/sample";
 async function openEditor(page: import("@playwright/test").Page) {
   await page.goto("/");
   await page.getByRole("link", { name: /Connections that move us/ }).click();
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
 }
-test("desktop has a live 60/40 workspace, independent scrolling and keyboard/pointer resize", async ({
+test("desktop has a live 23/42/35 workspace, independent scrolling and keyboard/pointer resize", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
@@ -17,10 +17,10 @@ test("desktop has a live 60/40 workspace, independent scrolling and keyboard/poi
   const separator = page.getByRole("separator", {
     name: "Resize editor and preview",
   });
-  await expect(separator).toHaveAttribute("aria-valuenow", "60");
+  await expect(separator).toHaveAttribute("aria-valuenow", "65");
   const workspace = await page.locator(".split-workspace").boundingBox();
   const editor = await page.locator(".workspace-editor").boundingBox();
-  expect(editor!.width / workspace!.width).toBeCloseTo(0.6, 1);
+  expect(editor!.width / workspace!.width).toBeCloseTo(0.42, 1);
   const frame = page.frameLocator("iframe");
   const before = await frame.locator("body").evaluate(() => window.scrollY);
   await page
@@ -31,14 +31,14 @@ test("desktop has a live 60/40 workspace, independent scrolling and keyboard/poi
   );
   await separator.focus();
   await separator.press("ArrowLeft");
-  await expect(separator).toHaveAttribute("aria-valuenow", "58");
+  await expect(separator).toHaveAttribute("aria-valuenow", "63");
   const box = await separator.boundingBox();
   await page.mouse.move(box!.x + box!.width / 2, box!.y + 100);
   await page.mouse.down();
   await page.mouse.move(box!.x - 80, box!.y + 100);
   await page.mouse.up();
   expect(Number(await separator.getAttribute("aria-valuenow"))).toBeLessThan(
-    58,
+    63,
   );
   expect(
     await page.evaluate(
@@ -95,6 +95,7 @@ test("page navigation, zoom and fit retain A4 proportions", async ({
   page,
 }) => {
   await openEditor(page);
+  await page.locator(".workspace-preview").hover();
   await page.getByLabel("Preview page", { exact: true }).selectOption("2");
   await expect(page.getByLabel("Preview page", { exact: true })).toHaveValue(
     "2",
@@ -116,9 +117,9 @@ test("page navigation, zoom and fit retain A4 proportions", async ({
     .first()
     .boundingBox();
   expect(rectangle!.width / rectangle!.height).toBeCloseTo(210 / 297, 3);
-  await page.getByRole("button", { name: "Fit to width", exact: true }).click();
+  await page.getByRole("button", { name: "Fit page", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Fit to width", exact: true }),
+    page.getByRole("button", { name: "Fit page", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   expect(
     await page
@@ -138,7 +139,7 @@ test("mobile tabs preserve drafts and tablet fits without horizontal overflow", 
   await page
     .getByRole("tab", { name: "Preview & export", exact: true })
     .click();
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   await expect(
     page
       .frameLocator("iframe")
@@ -182,7 +183,7 @@ test("story focus navigates to its actual measured page and excludes disabled st
     issue,
   );
   await page.goto("/issues/" + issue.id);
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   await page
     .getByRole("button", { name: "Second live story", exact: true })
     .click();

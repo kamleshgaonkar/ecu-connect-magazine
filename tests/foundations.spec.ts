@@ -81,7 +81,7 @@ test("v1 editing migrates safely and saved theme/master selections drive preview
       .getByRole("combobox", { name: "Story background", exact: true })
       .first(),
   ).toHaveValue("cream");
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   const frame = page.frameLocator("iframe");
   const first = frame.locator(".page").nth(2);
   await expect(first).toHaveAttribute("data-physical-page", "3");
@@ -196,5 +196,5 @@ test("invalid unsaved details show a recoverable preview error without losing ed
   await page
     .getByLabel("Magazine title", { exact: true })
     .fill("Recovered draft");
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
 });

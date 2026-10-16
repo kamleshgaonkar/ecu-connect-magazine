@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { gridSchema } from "./grid";
 import { templateIds, pageMasterIds, themeIds } from "./design";
 import { mediaReferenceSchema, renderAssetSchema } from "./media";
 
@@ -22,6 +23,7 @@ const blockSchema = z
       "list",
       "figure",
       "callout",
+      "caption",
     ]),
     text: z.string().max(20000),
     image: mediaReferenceSchema.optional(),
@@ -114,6 +116,7 @@ export const issueSchema = z
                     subtitle: z.string().max(500),
                     byline: z.string().max(150),
                     blocks: z.array(blockSchema).max(100),
+                    grid: gridSchema.optional(),
                   })
                   .strict(),
               )
@@ -132,6 +135,18 @@ export const issueSchema = z
         ...s.stories.flatMap((t) => [t.id, ...t.blocks.map((b) => b.id)]),
       ]),
     ];
+    for (const section of issue.sections)
+      for (const story of section.stories) {
+        const assigned =
+          story.grid?.rows.flatMap((r) =>
+            r.cells.flatMap((c) => c.contentIds),
+          ) ?? [];
+        if (assigned.some((id) => !story.blocks.some((b) => b.id === id)))
+          ctx.addIssue({
+            code: "custom",
+            message: "Grid references missing content.",
+          });
+      }
     if (new Set(ids).size !== ids.length)
       ctx.addIssue({
         code: "custom",

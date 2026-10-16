@@ -113,12 +113,13 @@ test("Cover and Contents actions open existing settings without editing a magazi
     await expect(
       page.getByRole("button", { name: "Save Magazine", exact: true }),
     ).toBeDisabled();
+    await page.getByRole("link", { name: "ECU Connect", exact: true }).click();
     await page
       .getByRole("link", { name: "Page Templates", exact: true })
       .click();
   }
 });
-test("unsaved work is protected when navigating to the gallery", async ({
+test("unsaved work is protected when returning to the dashboard", async ({
   page,
 }) => {
   await seed(page);
@@ -126,7 +127,7 @@ test("unsaved work is protected when navigating to the gallery", async ({
   const field = page.getByLabel("Headline", { exact: true }).first();
   await field.fill("An unsaved studio headline");
   page.once("dialog", (dialog) => dialog.dismiss());
-  await page.getByRole("link", { name: "Page Templates", exact: true }).click();
+  await page.getByRole("link", { name: "ECU Connect", exact: true }).click();
   await expect(page).toHaveURL(new RegExp("/issues/" + sampleIssue.id + "$"));
   await expect(field).toHaveValue("An unsaved studio headline");
 });
@@ -176,7 +177,7 @@ test("desktop controls are monochrome while the live magazine keeps its original
     fullPage: true,
   });
   await page.goto("/issues/" + sampleIssue.id);
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   await expect(page.locator(".workspace-preview")).toHaveCSS(
     "background-color",
     "rgb(245, 245, 245)",
@@ -212,7 +213,7 @@ test("tablet and mobile navigation, gallery and split editor remain usable", asy
   await page
     .getByRole("tab", { name: "Preview & export", exact: true })
     .click();
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   await page.screenshot({ path: "test-results/studio-editor-mobile.png" });
   expect(
     await page.evaluate(

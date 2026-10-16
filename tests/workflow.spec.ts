@@ -37,9 +37,9 @@ test("create, structure, persist, preview and export an issue", async ({
   await expect(page.getByLabel("Headline", { exact: true })).toHaveValue(
     "People make the difference",
   );
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   // The live iframe remains mounted and measured throughout editing.
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   const frame = page.frameLocator("iframe");
   expect(await frame.locator(".page").count()).toBeGreaterThan(3); // cover, contents and measured story pages
   const start = await frame.locator(".toc-number").first().textContent();

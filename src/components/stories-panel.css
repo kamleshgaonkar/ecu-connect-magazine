@@ -1,0 +1,115 @@
+/* Stories-only controls. No changes to editor fields, grid or preview chrome. */
+.stories-panel .outline-row,
+.stories-panel .story-line {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.stories-panel .outline-section,
+.stories-panel .outline-story {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.stories-panel .story-line {
+  position: relative;
+  border-radius: 8px;
+}
+.stories-panel .outline-story {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.stories-panel .story-line[data-selected="true"] {
+  background: #ededed;
+  box-shadow: inset 2px 0 #111;
+}
+.stories-panel .outline-story[aria-current="true"] {
+  background: transparent;
+  box-shadow: none;
+}
+.stories-panel .outline-row[data-hidden="true"] .outline-section,
+.stories-panel .story-line[data-hidden="true"] .outline-story {
+  opacity: 0.48;
+}
+.stories-panel .item-visibility {
+  opacity: 0;
+  pointer-events: none;
+  flex: none;
+  width: 26px;
+  min-width: 26px;
+  min-height: 30px;
+  padding: 4px;
+  color: #737373;
+}
+.stories-panel .outline-row:hover > .item-visibility,
+.stories-panel .outline-row:focus-within > .item-visibility,
+.stories-panel .outline-row[data-selected="true"] > .item-visibility,
+.stories-panel .story-line:hover > .item-visibility,
+.stories-panel .story-line:focus-within > .item-visibility,
+.stories-panel .story-line[data-selected="true"] > .item-visibility {
+  opacity: 1;
+  pointer-events: auto;
+}
+.stories-panel .stories-drag-handle {
+  flex: none;
+  width: 20px;
+  min-width: 20px;
+  min-height: 30px;
+  padding: 2px;
+  color: #999;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.stories-panel .stories-drag-handle:active {
+  cursor: grabbing;
+}
+.stories-panel [data-drag-source="true"] > .outline-row,
+.stories-panel [data-drag-source="true"] > .story-line {
+  opacity: 0.3;
+}
+.stories-panel[data-dragging="true"] {
+  user-select: none;
+}
+.stories-drag-overlay {
+  z-index: 150;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 6px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px #0001;
+  font-family: var(--font-app);
+  font-size: 14px;
+  color: #111;
+  will-change: transform;
+}
+.stories-drag-overlay > svg {
+  color: #999;
+  flex: none;
+}
+.stories-insertion-indicator {
+  z-index: 151;
+  height: 2px;
+  background: #111;
+  pointer-events: none;
+}
+.stories-insertion-indicator:before {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  left: 0;
+  top: -1.5px;
+  background: #111;
+  border-radius: 50%;
+}
+@media (hover: none) {
+  .stories-panel .item-visibility {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

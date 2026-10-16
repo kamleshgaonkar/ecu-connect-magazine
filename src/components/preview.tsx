@@ -1,12 +1,15 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertTriangle,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Download,
-  Loader,
+  ScanLine,
+  MoreHorizontal,
+  Maximize2,
+  X,
   Minus,
   Plus,
 } from "lucide-react";
@@ -26,8 +29,14 @@ export function Preview({
   activeStoryId?: string;
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
+  const panel = useRef<HTMLElement>(null);
+  const fullscreenButton = useRef<HTMLButtonElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [touchControls, setTouchControls] = useState(false);
+  const fullscreenRef = useRef(false);
   const pageRef = useRef(1);
   const navigatedStory = useRef<string | undefined>(undefined);
+  const storyPages = useRef<LayoutResult["storyPages"]>({});
   const selectedStory = useRef(activeStoryId);
   const [prepared, setPrepared] = useState<{
     issue: Issue | null;
@@ -97,7 +106,13 @@ export function Preview({
 
   function send(page?: number, zoom: "fit" | number = zoomRef.current) {
     frame.current?.contentWindow?.postMessage(
-      { type: "preview-control", renderId: doc.id, page, zoom },
+      {
+        type: "preview-control",
+        renderId: doc.id,
+        page,
+        zoom,
+        fullscreen: fullscreenRef.current,
+      },
       "*",
     );
   }
@@ -118,6 +133,7 @@ export function Preview({
           renderId: doc.id,
           page: destination,
           zoom: zoomRef.current,
+          fullscreen: fullscreenRef.current,
         },
         "*",
       );
@@ -132,6 +148,27 @@ export function Preview({
       )
         return;
       if (
+        event.data.type === "preview-grid-measured" &&
+        event.data.cells &&
+        typeof event.data.cells === "object"
+      ) {
+        window.dispatchEvent(
+          new CustomEvent("ecu-grid-measured", { detail: event.data.cells }),
+        );
+      }
+      if (event.data.type === "preview-focus" && fullscreenRef.current) {
+        const controls = Array.from(
+          panel.current?.querySelectorAll<HTMLElement>(
+            "button:not(:disabled),select:not(:disabled),summary",
+          ) ?? [],
+        ).filter((el) => el.getClientRects().length > 0);
+        (event.data.backward ? controls.at(-1) : controls[0])?.focus();
+      }
+      if (event.data.type === "preview-close") {
+        fullscreenRef.current = false;
+        setFullscreen(false);
+      }
+      if (
         event.data.type === "magazine-ready" &&
         Number.isInteger(event.data.pages) &&
         Array.isArray(event.data.warnings)
@@ -140,9 +177,13 @@ export function Preview({
         setLayout(result);
         const story = selectedStory.current;
         const destination =
-          story && story !== navigatedStory.current
+          story &&
+          (story !== navigatedStory.current ||
+            storyPages.current[story]?.physicalPage !==
+              result.storyPages[story]?.physicalPage)
             ? result.storyPages[story]?.physicalPage
             : undefined;
+        storyPages.current = result.storyPages;
         if (destination) navigatedStory.current = story;
         const page = Math.min(result.pages, destination ?? pageRef.current);
         frame.current?.contentWindow?.postMessage(
@@ -151,6 +192,7 @@ export function Preview({
             renderId: doc.id,
             page,
             zoom: zoomRef.current,
+            fullscreen: fullscreenRef.current,
           },
           "*",
         );
@@ -172,6 +214,94 @@ export function Preview({
     return () => window.removeEventListener("message", receive);
   }, [doc.id]);
 
+  useEffect(() => {
+    if (!fullscreen) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const hidden = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        ".workspace-stories,.workspace-editor,.editor-heading,.mobile-editor-tabs,.workspace-divider",
+      ),
+    );
+    hidden.forEach((el) => (el.inert = true));
+    panel.current
+      ?.querySelector<HTMLButtonElement>(
+        "[aria-label='Close full-screen preview']",
+      )
+      ?.focus();
+    function keyboard(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        fullscreenRef.current = false;
+        setFullscreen(false);
+      }
+      if (
+        ["ArrowLeft", "ArrowRight"].includes(event.key) &&
+        !(event.target instanceof HTMLSelectElement) &&
+        !(event.target instanceof HTMLInputElement)
+      ) {
+        event.preventDefault();
+        frame.current?.contentWindow?.postMessage(
+          {
+            type: "preview-control",
+            renderId: doc.id,
+            page: Math.max(
+              1,
+              Math.min(
+                layout?.pages ?? 1,
+                pageRef.current + (event.key === "ArrowLeft" ? -1 : 1),
+              ),
+            ),
+            zoom: zoomRef.current,
+            fullscreen: true,
+          },
+          "*",
+        );
+      }
+      if (event.key === "Tab") {
+        const controls = Array.from(
+          panel.current?.querySelectorAll<HTMLElement>(
+            "button:not(:disabled), select:not(:disabled), summary, iframe",
+          ) ?? [],
+        );
+        const visible = controls.filter((el) => el.getClientRects().length > 0);
+        const first = visible[0],
+          last = visible[visible.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    }
+    window.addEventListener("keydown", keyboard);
+    return () => {
+      hidden.forEach((el) => (el.inert = false));
+      window.removeEventListener("keydown", keyboard);
+      previousFocus?.focus();
+    };
+  }, [fullscreen, doc.id, layout?.pages]);
+  useEffect(() => {
+    frame.current?.contentWindow?.postMessage(
+      {
+        type: "preview-control",
+        renderId: doc.id,
+        page: pageRef.current,
+        zoom: zoomRef.current,
+        fullscreen,
+      },
+      "*",
+    );
+  }, [fullscreen, doc.id]);
+  function toggleFullscreen() {
+    const next = !fullscreenRef.current;
+    fullscreenRef.current = next;
+    setFullscreen(next);
+    zoomRef.current = "fit";
+    setZoomMode("fit");
+    send(pageRef.current, "fit");
+    if (!next) fullscreenButton.current?.focus();
+  }
   async function download() {
     if (!ready) return;
     setBusy(true);
@@ -209,29 +339,45 @@ export function Preview({
     tooLarge ||
     (!updating && currentLayout?.warnings.length)
   );
-  const reviewCount = (currentLayout?.notices.length ?? 0) + (issue.sample ? 1 : 0);
+  const reviewCount =
+    (currentLayout?.notices.length ?? 0) + (issue.sample ? 1 : 0);
+  const exportTarget =
+    typeof document !== "undefined"
+      ? document.getElementById("workspace-export")
+      : null;
+  const exportButton = (
+    <button
+      className="button primary"
+      disabled={busy || !ready}
+      onClick={download}
+    >
+      <Download size={17} />
+      {busy ? "Rendering PDF…" : "Export PDF"}
+    </button>
+  );
   return (
-    <section className="preview-panel">
-      <div className="preview-toolbar">
-        <div className="preview-title">
-          <h2>Preview</h2>
-          <p>
-            A4 ·{" "}
-            {currentLayout
-              ? currentLayout.pages + " pages"
-              : "Preparing pages…"}
-          </p>
-        </div>
-        <button
-          className="button primary"
-          disabled={busy || !ready}
-          onClick={download}
-        >
-          <Download size={17} />
-          {busy ? "Rendering PDF…" : "Export PDF"}
-        </button>
-      </div>
-      <div className="preview-navigation" aria-label="Preview controls">
+    <section
+      data-preview-ready={!updating && !!currentLayout}
+      data-controls-visible={touchControls}
+      onPointerLeave={() => setTouchControls(false)}
+      ref={panel}
+      className={"preview-panel" + (fullscreen ? " fullscreen-preview" : "")}
+      role={fullscreen ? "dialog" : undefined}
+      aria-modal={fullscreen ? true : undefined}
+      aria-label={fullscreen ? "Full-screen magazine preview" : undefined}
+    >
+      {exportTarget && createPortal(exportButton, exportTarget)}
+      <button
+        className="preview-touch-toggle icon-button"
+        aria-label="Show preview controls"
+        onClick={() => setTouchControls(!touchControls)}
+      >
+        <MoreHorizontal size={18} />
+      </button>
+      <div
+        className="preview-navigation preview-floating"
+        aria-label="Preview controls"
+      >
         <div className="preview-group" role="group" aria-label="Pages">
           <button
             className="icon-button"
@@ -288,35 +434,68 @@ export function Preview({
           </button>
           <button
             className="button secondary fit-width"
+            aria-label="Fit page"
+            title="Fit page"
             aria-pressed={zoomMode === "fit"}
             disabled={!currentLayout}
             onClick={() => zoom("fit")}
           >
-            Fit to width
+            <ScanLine size={17} />
           </button>
         </div>
+        <button
+          ref={fullscreenButton}
+          className="icon-button"
+          aria-label={
+            fullscreen
+              ? "Close full-screen preview"
+              : "Open full-screen preview"
+          }
+          onClick={toggleFullscreen}
+          disabled={!currentLayout}
+        >
+          {fullscreen ? <X size={19} /> : <Maximize2 size={19} />}
+        </button>
+        <details className="preview-notices preview-secondary">
+          <summary aria-label="More preview options">
+            <MoreHorizontal size={18} />
+            {reviewCount > 0 && (
+              <span
+                className="preview-warning-dot"
+                aria-label="Review notes available"
+              />
+            )}
+          </summary>
+          <div className="preview-review-panel">
+            <h3>Review issues{reviewCount ? " (" + reviewCount + ")" : ""}</h3>
+            {currentLayout?.notices.map((notice) => (
+              <p key={notice} className="muted" role="note">
+                {friendlyPreviewMessage(notice)}
+              </p>
+            ))}
+            {issue.sample && (
+              <p className="sample-notice">
+                Demonstration content only. This edition contains fictional
+                editorial copy and is not approved for publication.
+              </p>
+            )}
+            <p className="muted">
+              Your layout and text sizes stay the same when you export. Zoom
+              only changes your view.
+            </p>
+          </div>
+        </details>
       </div>
-      <div
-        className={"layout-status" + (blocking ? " blocking" : "")}
-        role="status"
-      >
-        {blocking ? (
-          <AlertTriangle size={16} aria-hidden="true" />
-        ) : updating ? (
-          <Loader size={16} aria-hidden="true" />
-        ) : (
-          <CheckCircle2 size={16} aria-hidden="true" />
-        )}
-        <span>
-          {prepared?.error
-            ? "Preview needs attention."
-            : updating
-              ? "Updating preview…"
-              : currentLayout?.warnings.length
-                ? currentLayout.warnings.map(friendlyPreviewMessage).join(" ")
-                : "Layout checked. Page numbers and contents are up to date."}
-        </span>
-      </div>
+      {blocking && (
+        <div className="layout-status blocking" role="alert">
+          <AlertTriangle size={16} />
+          <span>
+            {prepared?.error
+              ? "Preview needs attention. Your content is retained."
+              : currentLayout?.warnings.map(friendlyPreviewMessage).join(" ")}
+          </span>
+        </div>
+      )}
       {prepared?.error && (
         <p className="error" role="alert">
           {prepared.error} Your unsaved content is retained; correct it in the
@@ -335,26 +514,6 @@ export function Preview({
           {error}
         </p>
       )}
-      <details className="preview-notices">
-        <summary>
-          Review issues{reviewCount ? " (" + reviewCount + ")" : ""}
-        </summary>
-        {currentLayout?.notices.map((notice) => (
-          <p key={notice} className="muted" role="note">
-            {friendlyPreviewMessage(notice)}
-          </p>
-        ))}
-        {issue.sample && (
-          <p className="sample-notice">
-            Demonstration content only. This edition contains fictional
-            editorial copy and is not approved for publication.
-          </p>
-        )}
-        <p className="muted">
-          Your layout and text sizes stay the same when you export. Zoom only
-          changes your view.
-        </p>
-      </details>
       <iframe
         ref={frame}
         onLoad={() =>
@@ -366,6 +525,7 @@ export function Preview({
         title="A4 magazine pages"
         sandbox="allow-scripts"
         srcDoc={doc.html ?? undefined}
+        aria-busy={updating}
         className="magazine-frame"
       />
     </section>

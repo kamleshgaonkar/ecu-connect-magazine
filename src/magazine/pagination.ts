@@ -1,3 +1,4 @@
+import type { flowGridStory } from "./grid-flow";
 import type { RenderModel } from "./templates";
 import type { createPageMaster, createCoverMaster } from "./page-masters";
 import type { createMediaImage } from "./media-image";
@@ -23,6 +24,7 @@ export async function renderMagazine(
   folioForPage: typeof printedFolio,
   maxPages: number,
   renderId: string,
+  gridFlow?: typeof flowGridStory,
 ) {
   const { issue, stories } = model;
   const root = document.getElementById("pages")!;
@@ -66,6 +68,10 @@ export async function renderMagazine(
   }
   function rich(tag: string, cls: string, text: string) {
     const node = el(tag, cls);
+    if (cls === "text-block caption") {
+      node.style.fontSize = "8pt";
+      node.style.lineHeight = "1.3";
+    }
     const re = /\*\*([^*]+)\*\*|\*([^*]+)\*/g;
     let at = 0;
     for (const match of text.matchAll(re)) {
@@ -141,7 +147,7 @@ export async function renderMagazine(
     page.dataset.theme = context!.theme;
     narrativeColumns = [];
     narrativeColumn = 0;
-    if (master === "editorial") {
+    if (master === "editorial" && !context!.story.grid) {
       const container = body;
       container.classList.add("editorial-region");
       const count = context!.story.editorial?.columns ?? 1;
@@ -390,10 +396,20 @@ export async function renderMagazine(
         item.story.editorial?.showTitle !== false
       ) {
         const heading = el("div", "story-heading");
-        heading.append(el("h2", "story-title", item.story.title));
-        if (item.story.subtitle)
+        const linked = new Set(
+          item.story.grid?.rows.flatMap((r) =>
+            r.cells.flatMap((c) =>
+              (c.blocks ?? []).flatMap((b) =>
+                b.kind === "linked" ? [b.source] : [],
+              ),
+            ),
+          ),
+        );
+        if (!linked.has("headline"))
+          heading.append(el("h2", "story-title", item.story.title));
+        if (item.story.subtitle && !linked.has("introduction"))
           heading.append(el("p", "subtitle", item.story.subtitle));
-        if (item.story.byline)
+        if (item.story.byline && !linked.has("author"))
           heading.append(el("p", "byline", item.story.byline));
         add(heading, true);
       }
@@ -428,7 +444,47 @@ export async function renderMagazine(
             "Story image/caption exceeds an A4 page: " + item.story.title,
           );
       }
-      for (const [blockIndex, block] of item.story.blocks.entries()) {
+      if (item.story.grid && gridFlow) {
+        gridFlow(item.story, {
+          body: () => body,
+          fresh: () => {
+            fresh(true);
+          },
+          rich,
+          slice: sliceStyled,
+          warn: (message) => warnings.push(message),
+          image: (block) => {
+            const figure = el("figure", "editorial-figure");
+            const image = mediaImage(
+              block.image,
+              issue.renderAssets ?? [],
+              "editorial-image",
+              "Select an approved figure image",
+            );
+            image.style.height = (block.figureHeightMm ?? 70) + "mm";
+            figure.append(image);
+            const caption = [
+              block.text,
+              block.image?.caption,
+              block.image?.credit,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            if (caption) figure.append(rich("figcaption", "", caption));
+            if (!block.image)
+              warnings.push(
+                "Grid image missing in " +
+                  item.story.title +
+                  ". Select an uploaded image before exporting.",
+              );
+            return figure;
+          },
+        });
+      }
+      for (const [blockIndex, block] of (item.story.grid
+        ? []
+        : item.story.blocks
+      ).entries()) {
         if (
           block.breakBefore === "page" &&
           (body.children.length || narrativeColumn)
@@ -507,6 +563,16 @@ export async function renderMagazine(
         story.visual?.thumbnail,
         ...story.media,
         ...story.blocks.map((block) => block.image),
+        ...[
+          ...(story.grid?.rows ?? []),
+          ...(story.grid?.continuation ?? []),
+        ].flatMap((r) =>
+          r.cells.flatMap((c) =>
+            (c.blocks ?? []).flatMap((b) =>
+              b.kind === "manual" && b.image ? [b.image] : [],
+            ),
+          ),
+        ),
       ]),
     ].filter((r) => Boolean(r));
     for (const reference of references) {

@@ -73,7 +73,7 @@ test("editing a selected story updates the live preview and navigates to its pag
 }) => {
   await seed(page);
   await page.goto("/issues/" + sampleIssue.id);
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   await sectionButton(page, 1).click();
   await outline(page)
     .getByRole("button", {
@@ -138,7 +138,9 @@ test("unsaved drafts survive switching views and persist after Save Magazine", a
   await expect(
     page.getByRole("status").filter({ hasText: "Unsaved changes" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Save Magazine", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Save Magazine", exact: true })
+    .click();
   await expect(
     page.getByRole("status").filter({ hasText: "Saved locally" }),
   ).toBeVisible();
@@ -190,16 +192,17 @@ test("technical pagination options live in a collapsed Advanced Layout section",
     ).toHaveCount(1);
 });
 
-test("Review issues collects notes while the layout status stays visible", async ({
+test("Review issues are available through the secondary menu", async ({
   page,
 }) => {
   await seed(page);
   await page.goto("/issues/" + sampleIssue.id);
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   const review = page.getByText(/^Review issues/);
-  await expect(review).toBeVisible();
+  await expect(review).toBeHidden();
   await expect(page.getByText(/Demonstration content only/)).toBeHidden();
-  await review.click();
+  await page.locator(".workspace-preview").hover();
+  await page.getByLabel("More preview options").click();
   await expect(page.getByText(/Demonstration content only/)).toBeVisible();
 });
 
@@ -208,7 +211,10 @@ test("template filters, selection and Apply Layout open the chosen story", async
 }) => {
   await seed(page);
   await page.goto("/templates");
-  const available = page.getByRole("button", { name: "Available", exact: true });
+  const available = page.getByRole("button", {
+    name: "Available",
+    exact: true,
+  });
   await available.click();
   await expect(available).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".layout-card.is-available")).toHaveCount(4);
@@ -233,8 +239,12 @@ test("template filters, selection and Apply Layout open the chosen story", async
   const target = sampleIssue.sections[1].stories[0];
   await dialog
     .getByLabel("Choose story")
-    .selectOption({ label: sampleIssue.sections[1].name + " · " + target.title });
-  await dialog.getByRole("button", { name: "Apply Layout", exact: true }).click();
+    .selectOption({
+      label: sampleIssue.sections[1].name + " · " + target.title,
+    });
+  await dialog
+    .getByRole("button", { name: "Apply Layout", exact: true })
+    .click();
   await expect(page.getByLabel("Headline", { exact: true })).toHaveValue(
     target.title,
   );
@@ -278,10 +288,16 @@ test("Poppins is the loaded interface font while magazine pages keep their own f
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.goto("/");
   await expect(page.locator(".cover-thumbnail iframe").first()).toBeVisible();
-  await expect(page.frameLocator(".cover-thumbnail iframe").first().locator(".page").first()).toHaveCSS("zoom", /0\.2/);
+  await expect(
+    page
+      .frameLocator(".cover-thumbnail iframe")
+      .first()
+      .locator(".page")
+      .first(),
+  ).toHaveCSS("zoom", /0\.2/);
   await page.screenshot({ path: "test-results/editor-ux-dashboard.png" });
   await page.getByRole("link", { name: /Connections that move us/ }).click();
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   const fonts = await page.evaluate(async () => {
     await document.fonts.ready;
     const family = (selector: string) =>
@@ -291,17 +307,18 @@ test("Poppins is the loaded interface font while magazine pages keep their own f
         .filter((font) => font.status === "loaded")
         .map((font) => font.family.replace(/["']/g, "") + " " + font.weight),
       body: family("body"),
-      nav: family(".sidebar nav a"),
+      nav: family(".workspace-home"),
       heading: family("h1"),
       button: family(".button.primary"),
       label: family(".title-field"),
       input: family(".title-field input"),
-      toolbar: family(".preview-toolbar"),
+      toolbar: family(".preview-floating"),
     };
   });
   for (const weight of ["400", "500", "600", "700"])
-    expect(fonts.loaded.some((f) => /poppins/i.test(f) && f.endsWith(weight)))
-      .toBe(true);
+    expect(
+      fonts.loaded.some((f) => /poppins/i.test(f) && f.endsWith(weight)),
+    ).toBe(true);
   for (const value of [
     fonts.body,
     fonts.nav,
@@ -311,9 +328,7 @@ test("Poppins is the loaded interface font while magazine pages keep their own f
     fonts.input,
     fonts.toolbar,
   ])
-    expect(value.split(",")[0].replace(/["']/g, "").trim()).toMatch(
-      /poppins/i,
-    );
+    expect(value.split(",")[0].replace(/["']/g, "").trim()).toMatch(/poppins/i);
   const magazineFont = await page
     .frameLocator("iframe")
     .locator(".page")
@@ -324,14 +339,18 @@ test("Poppins is the loaded interface font while magazine pages keep their own f
   await page.screenshot({ path: "test-results/editor-ux-editor.png" });
 });
 
-test("dashboard cards prioritize volume and open by keyboard at responsive widths", async ({ page }) => {
+test("dashboard cards prioritize volume and open by keyboard at responsive widths", async ({
+  page,
+}) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await seed(page);
   await page.goto("/");
   const card = page.locator(".issue-card").first();
   await expect(card.locator(".studio-volume-label")).toHaveText("VOLUME");
-  await expect(card.locator(".volume-number")).toHaveText(String(sampleIssue.volume));
+  await expect(card.locator(".volume-number")).toHaveText(
+    String(sampleIssue.volume),
+  );
   await expect(card.locator(".publication-date")).toHaveText(sampleIssue.date);
   await expect(card).toContainText("Draft");
   await expect(card).toContainText("sections");
@@ -341,14 +360,18 @@ test("dashboard cards prioritize volume and open by keyboard at responsive width
   await expect(cover.locator(".page").first()).toHaveCSS("zoom", /0\.2/);
   for (const width of [1600, 900, 390]) {
     await page.setViewportSize({ width, height: 900 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
     await expect(card).toBeVisible();
   }
   await card.focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(new RegExp("/issues/" + sampleIssue.id + "$"));
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await expect(page.getByText("Layout checked.")).toBeVisible();
+  await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
   await page.goto("/templates");
   await expect(page.locator(".layout-card")).toHaveCount(17);
   expect(errors).toEqual([]);

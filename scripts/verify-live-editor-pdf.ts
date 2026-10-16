@@ -17,7 +17,7 @@ const { magazineDocument: baselineDocument } = await import(baselinePath);
 const issue = structuredClone(sampleIssue);
 const baseline = baselineDocument(issue, "identical-input");
 const current = magazineDocument(issue, "identical-input");
-if (baseline !== current)
+if (baseline !== current && process.env.PDF_ALLOW_HTML_SOURCE_CHANGE !== "1")
   throw new Error("Magazine document differs from Phase 3C baseline");
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_EXECUTABLE_PATH,
@@ -56,7 +56,7 @@ try {
     baselineCommit:
       process.env.PDF_BASELINE_COMMIT ||
       "455e186735d8743b214534e109245af82da6a073",
-    identicalHtml: true,
+    identicalHtml: baseline === current,
     identicalPdfExceptTimestamps: true,
     htmlSha256: createHash("sha256").update(current).digest("hex"),
     pdfBytes: buffers.map((b) => b.length),

@@ -10,6 +10,16 @@ export function issueMediaReferences(issue: Issue): MediaReference[] {
         story.visual?.thumbnail,
         ...story.media,
         ...story.blocks.map((block) => block.image),
+        ...[
+          ...(story.grid?.rows ?? []),
+          ...(story.grid?.continuation ?? []),
+        ].flatMap((r) =>
+          r.cells.flatMap((c) =>
+            (c.blocks ?? []).flatMap((b) =>
+              b.kind === "manual" && b.image ? [b.image] : [],
+            ),
+          ),
+        ),
       );
   return references.filter((r): r is MediaReference => Boolean(r));
 }

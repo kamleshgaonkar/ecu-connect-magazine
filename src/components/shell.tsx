@@ -6,11 +6,19 @@ import type { MouseEvent, ReactNode } from "react";
 export function Shell({
   children,
   onNavigate,
+  editor = false,
 }: {
   children: ReactNode;
+  editor?: boolean;
   onNavigate?: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const pathname = usePathname();
+  if (editor)
+    return (
+      <div className="studio-shell editor-shell">
+        <div className="main-wrap">{children}</div>
+      </div>
+    );
   return (
     <div className="app-shell studio-shell">
       <aside className="sidebar">

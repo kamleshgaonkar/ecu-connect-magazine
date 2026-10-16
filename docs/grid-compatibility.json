@@ -1,0 +1,68 @@
+{
+  "baselineCommit": "70579d3d37743c699e11c8feb3fe23a0f58b57dd",
+  "results": [
+    {
+      "template": "t04",
+      "identicalPdfExceptTimestamps": true,
+      "identicalPagination": true,
+      "pdfBytes": [
+        64773,
+        64773
+      ]
+    },
+    {
+      "template": "opener",
+      "identicalPdfExceptTimestamps": true,
+      "identicalPagination": true,
+      "pdfBytes": [
+        75955,
+        75955
+      ]
+    },
+    {
+      "template": "feature",
+      "identicalPdfExceptTimestamps": true,
+      "identicalPagination": true,
+      "pdfBytes": [
+        64973,
+        64973
+      ]
+    },
+    {
+      "template": "dispatch",
+      "identicalPdfExceptTimestamps": true,
+      "identicalPagination": true,
+      "pdfBytes": [
+        64989,
+        64989
+      ]
+    },
+    {
+      "template": "bulletin",
+      "identicalPdfExceptTimestamps": true,
+      "identicalPagination": true,
+      "pdfBytes": [
+        65148,
+        65148
+      ]
+    },
+    {
+      "template": "editorial",
+      "identicalPdfExceptTimestamps": true,
+      "identicalPagination": true,
+      "pdfBytes": [
+        64989,
+        64989
+      ]
+    },
+    {
+      "template": "paper",
+      "identicalPdfExceptTimestamps": true,
+      "identicalPagination": true,
+      "pdfBytes": [
+        65675,
+        65675
+      ]
+    }
+  ]
+}
