@@ -48,10 +48,10 @@ export function flowGridStory(
     if (block.kind === "linked") {
       const text =
         block.source === "headline"
-          ? story.title
+          ? (story.openingFields?.title ?? story.title)
           : block.source === "introduction"
-            ? story.subtitle
-            : story.byline;
+            ? (story.openingFields?.subtitle ?? story.subtitle)
+            : (story.openingFields?.byline ?? story.byline);
       return api.rich(
         block.source === "headline" ? "h2" : "p",
         block.source === "headline"

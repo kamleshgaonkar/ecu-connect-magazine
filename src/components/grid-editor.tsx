@@ -266,7 +266,7 @@ export function GridEditor({
           {structureOnly ? "Continuation Page" : "Continuation layout"}
         </button>
       </div>
-      {story.pagePair && !editingContinuation && (
+      {!editingContinuation && (
         <div className="opening-page-fields" aria-label="Opening Page fields">
           {(
             [

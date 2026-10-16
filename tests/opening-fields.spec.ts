@@ -1,100 +1,141 @@
 import { test, expect } from "@playwright/test";
-import { newIssue, newSection } from "../src/domain/issue";
+import { newIssue, newSection, newStory, id } from "../src/domain/issue";
 
-test("Opening fields follow stories, override independently, persist and export", async ({
-  page,
-  request,
-}) => {
-  const issue = newIssue("Opening fields test", 21);
-  issue.sections = [newSection("What's Up @ ECU Worldwide")];
-  const story = issue.sections[0].stories[0];
-  Object.assign(story, {
-    title: "Original headline",
-    subtitle: "Original introduction",
-    byline: "Original author",
+for (const storyIndex of [0, 1, 2]) {
+  test(`Story ${storyIndex + 1} opening fields follow stories, override independently, persist and export`, async ({
+    page,
+    request,
+  }) => {
+    const issue = newIssue("Opening fields test", 21);
+    issue.sections = [newSection("What's Up @ ECU Worldwide")];
+    for (let index = 0; index < storyIndex; index++) {
+      issue.sections[0].stories.push(newStory());
+    }
+    const story = issue.sections[0].stories[storyIndex];
+    if (storyIndex === 2) {
+      const { makeRow } = await import("../src/domain/grid");
+      const row = makeRow();
+      row.cells[0].blocks = ["headline", "introduction", "author"].map(
+        (source) => ({
+          id: id(),
+          kind: "linked" as const,
+          source: source as "headline" | "introduction" | "author",
+        }),
+      );
+      story.grid = { rows: [row], continuation: [makeRow()] };
+    }
+    story.blocks = [
+      { id: id(), type: "paragraph", text: "Preserved article content" },
+    ];
+    if (story.grid)
+      story.grid.rows[0].cells[0].contentIds = [story.blocks[0].id];
+    Object.assign(story, {
+      title: "Original headline",
+      subtitle: "Original introduction",
+      byline: "Original author",
+    });
+    await page.addInitScript((data) => {
+      if (!localStorage.getItem("ecu-connect:issues:v1"))
+        localStorage.setItem("ecu-connect:issues:v1", JSON.stringify([data]));
+    }, issue);
+    await page.goto("/issues/" + issue.id);
+    await page
+      .getByRole("button", { name: "Original headline", exact: true })
+      .click();
+    const frame = page.frameLocator("iframe");
+    const opening = frame.locator(`[data-story-id="${story.id}"]`).first();
+    const ready = async () => {
+      await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
+    };
+    await ready();
+    await expect(opening.locator(".story-title")).toHaveText(
+      "Original headline",
+    );
+    for (const [label, value, selector] of [
+      ["Headline", "Updated headline", ".story-title"],
+      ["Subheadline", "Updated introduction", ".subtitle"],
+      ["Author", "Updated author", ".byline"],
+    ]) {
+      await page.getByRole("textbox", { name: label, exact: true }).fill(value);
+      await expect(opening.locator(selector)).toHaveText(value);
+      await page
+        .getByRole("textbox", { name: `${label} on Opening Page`, exact: true })
+        .fill(`Override ${label}`);
+      await expect(opening.locator(selector)).toHaveText(`Override ${label}`);
+      await page
+        .getByRole("textbox", { name: label, exact: true })
+        .fill(`Index ${label}`);
+      await expect(opening.locator(selector)).toHaveText(`Override ${label}`);
+    }
+    await expect(frame.locator(".contents .toc-story-title")).toContainText([
+      "Index Headline",
+    ]);
+    await expect(frame.locator(".blank-continuation .page-body")).toHaveText(
+      "",
+    );
+    await page
+      .getByRole("button", { name: "Continuation Page", exact: true })
+      .click();
+    await expect(
+      page.getByRole("textbox", {
+        name: "Headline on Opening Page",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Opening Page", exact: true })
+      .click();
+    await page
+      .getByRole("textbox", { name: "Author on Opening Page", exact: true })
+      .fill("");
+    if (storyIndex === 2)
+      await expect(opening.locator(".byline")).toHaveText("");
+    else await expect(opening.locator(".byline")).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Save Magazine", exact: true })
+      .click();
+    await expect(
+      page.getByRole("status").filter({ hasText: "Saved locally" }),
+    ).toBeVisible();
+    await page.reload();
+    await ready();
+    await expect(opening.locator(".story-title")).toHaveText(
+      "Override Headline",
+    );
+    await expect(opening.locator(".subtitle")).toHaveText(
+      "Override Subheadline",
+    );
+    if (storyIndex === 2)
+      await expect(opening.locator(".byline")).toHaveText("");
+    else await expect(opening.locator(".byline")).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Index Headline", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Use story author", exact: true })
+      .click();
+    await expect(opening.locator(".byline")).toHaveText("Index Author");
+    await expect(frame.locator(".blank-opening-split")).toHaveCount(1);
+    if (storyIndex > 0) {
+      await expect(opening).not.toHaveClass(/blank-section-page/);
+      await expect(opening).toContainText("Preserved article content");
+    }
+    const stored = await page.evaluate(
+      () => JSON.parse(localStorage.getItem("ecu-connect:issues:v1")!)[0],
+    );
+    expect(stored.sections[0].stories[storyIndex].title).toBe("Index Headline");
+    expect(stored.sections[0].stories[storyIndex].openingFields.title).toBe(
+      "Override Headline",
+    );
+    const response = await request.post("/api/export", { data: stored });
+    expect(response.status()).toBe(200);
+    const pdf = await response.body();
+    expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(
+      (pdf.toString("latin1").match(/\/Type\s*\/Page\b/g) ?? []).length,
+    ).toBe(4 + storyIndex);
   });
-  await page.addInitScript((data) => {
-    if (!localStorage.getItem("ecu-connect:issues:v1"))
-      localStorage.setItem("ecu-connect:issues:v1", JSON.stringify([data]));
-  }, issue);
-  await page.goto("/issues/" + issue.id);
-  await page
-    .getByRole("button", { name: "Original headline", exact: true })
-    .click();
-  const frame = page.frameLocator("iframe");
-  const opening = frame.locator(".blank-opening-split");
-  const ready = async () => {
-    await expect(page.locator('[data-preview-ready="true"]')).toBeVisible();
-  };
-  await ready();
-  await expect(opening.locator(".story-title")).toHaveText("Original headline");
-  for (const [label, value, selector] of [
-    ["Headline", "Updated headline", ".story-title"],
-    ["Subheadline", "Updated introduction", ".subtitle"],
-    ["Author", "Updated author", ".byline"],
-  ]) {
-    await page.getByRole("textbox", { name: label, exact: true }).fill(value);
-    await expect(opening.locator(selector)).toHaveText(value);
-    await page
-      .getByRole("textbox", { name: `${label} on Opening Page`, exact: true })
-      .fill(`Override ${label}`);
-    await expect(opening.locator(selector)).toHaveText(`Override ${label}`);
-    await page
-      .getByRole("textbox", { name: label, exact: true })
-      .fill(`Index ${label}`);
-    await expect(opening.locator(selector)).toHaveText(`Override ${label}`);
-  }
-  await expect(frame.locator(".contents .toc-story-title")).toHaveText(
-    "Index Headline",
-  );
-  await expect(frame.locator(".blank-continuation .page-body")).toHaveText("");
-  await page
-    .getByRole("button", { name: "Continuation Page", exact: true })
-    .click();
-  await expect(
-    page.getByRole("textbox", {
-      name: "Headline on Opening Page",
-      exact: true,
-    }),
-  ).toHaveCount(0);
-  await page.getByRole("button", { name: "Opening Page", exact: true }).click();
-  await page
-    .getByRole("textbox", { name: "Author on Opening Page", exact: true })
-    .fill("");
-  await expect(opening.locator(".byline")).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "Save Magazine", exact: true })
-    .click();
-  await expect(
-    page.getByRole("status").filter({ hasText: "Saved locally" }),
-  ).toBeVisible();
-  await page.reload();
-  await ready();
-  await expect(opening.locator(".story-title")).toHaveText("Override Headline");
-  await expect(opening.locator(".subtitle")).toHaveText("Override Subheadline");
-  await expect(opening.locator(".byline")).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "Index Headline", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Use story author", exact: true })
-    .click();
-  await expect(opening.locator(".byline")).toHaveText("Index Author");
-  const stored = await page.evaluate(
-    () => JSON.parse(localStorage.getItem("ecu-connect:issues:v1")!)[0],
-  );
-  expect(stored.sections[0].stories[0].title).toBe("Index Headline");
-  expect(stored.sections[0].stories[0].openingFields.title).toBe(
-    "Override Headline",
-  );
-  const response = await request.post("/api/export", { data: stored });
-  expect(response.status()).toBe(200);
-  const pdf = await response.body();
-  expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
-  expect(
-    (pdf.toString("latin1").match(/\/Type\s*\/Page\b/g) ?? []).length,
-  ).toBe(4);
-});
+}
 
 test("white opening uses linked fields safely and continuation stays blank", async ({
   page,

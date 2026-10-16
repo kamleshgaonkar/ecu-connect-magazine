@@ -70,11 +70,25 @@ test("basic grid hides content without changing saved layouts, linked fields or 
       name: /Add Content|Article content|Use approved template/,
     }),
   ).toHaveCount(0);
-  await expect(builder.getByRole("textbox")).toHaveCount(0);
+  await expect(builder.getByRole("textbox")).toHaveCount(3);
+  for (const label of ["Headline", "Subheadline", "Author"]) {
+    await expect(
+      builder.getByRole("textbox", {
+        name: `${label} on Opening Page`,
+        exact: true,
+      }),
+    ).toBeVisible();
+  }
+  await expect(
+    builder.locator(".grid-canvas").getByRole("textbox"),
+  ).toHaveCount(0);
   await expect(builder.locator(".grid-presets")).toBeHidden();
   await expect(builder.locator(".grid-article-content")).toBeHidden();
   await expect(builder.locator(".grid-editor-header")).toBeHidden();
-  await page.screenshot({ path: "test-results/basic-grid-controls.png", fullPage: true });
+  await page.screenshot({
+    path: "test-results/basic-grid-controls.png",
+    fullPage: true,
+  });
   await expect(page.locator(".story-options")).toBeHidden();
   await expect(
     page.getByRole("navigation", { name: "Magazine structure" }),

@@ -442,12 +442,16 @@ export async function renderMagazine(
             ),
           ),
         );
-        if (!linked.has("headline"))
-          heading.append(el("h2", "story-title", item.story.title));
-        if (item.story.subtitle && !linked.has("introduction"))
-          heading.append(el("p", "subtitle", item.story.subtitle));
-        if (item.story.byline && !linked.has("author"))
-          heading.append(el("p", "byline", item.story.byline));
+        const title = item.story.openingFields?.title ?? item.story.title;
+        const subtitle =
+          item.story.openingFields?.subtitle ?? item.story.subtitle;
+        const byline = item.story.openingFields?.byline ?? item.story.byline;
+        if (!linked.has("headline") && title)
+          heading.append(el("h2", "story-title", title));
+        if (subtitle && !linked.has("introduction"))
+          heading.append(el("p", "subtitle", subtitle));
+        if (byline && !linked.has("author"))
+          heading.append(el("p", "byline", byline));
         add(heading, true);
       }
       if (item.pageTemplate === "opener" && !item.story.visual?.hero)
