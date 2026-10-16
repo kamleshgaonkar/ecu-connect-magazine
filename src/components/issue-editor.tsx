@@ -30,9 +30,9 @@ import {
 import { layoutNames, layoutDescriptions } from "../studio/layout-catalog";
 import { issueRepository } from "../repositories/issues";
 import {
-  id,
   move,
   newStory,
+  newSection,
   templates,
   type Issue,
   type Section,
@@ -179,21 +179,9 @@ export function IssueEditor({ issueId }: { issueId: string }) {
   }
   function addSection(sectionType: string) {
     if (!issue) return;
-    const s: Section = {
-      id: id(),
-      name: sectionType,
-      enabled: true,
-      template:
-        sectionType === "Cover Story"
-          ? "feature"
-          : sectionType === "Notice Board"
-            ? "bulletin"
-            : "dispatch",
-      theme: "inherit",
-      stories: [],
-    };
+    const s = newSection(sectionType);
     update({ ...issue, sections: [...issue.sections, s] });
-    setView({ kind: "section", sectionId: s.id });
+    openStory(s, s.stories[0]);
   }
   function addStory(target: Section) {
     const story = newStory();

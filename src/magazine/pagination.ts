@@ -1,6 +1,10 @@
 import type { flowGridStory } from "./grid-flow";
 import type { RenderModel } from "./templates";
-import type { createPageMaster, createCoverMaster } from "./page-masters";
+import type {
+  createPageMaster,
+  createCoverMaster,
+  PageMasterOptions,
+} from "./page-masters";
 import type { createMediaImage } from "./media-image";
 import type { printedFolio } from "./folios";
 import type { PageMasterId } from "../domain/design";
@@ -104,6 +108,7 @@ export async function renderMagazine(
   function make(
     kind: "contents" | "article",
     master: PageMasterId = "article",
+    blankPage?: PageMasterOptions["blankPage"],
   ) {
     if (root.children.length >= maxPages)
       throw new Error(
@@ -114,9 +119,10 @@ export async function renderMagazine(
         kind,
         master,
         issue,
-        template: kind === "article" ? context!.template : "",
+        template: kind === "article" && !blankPage ? context!.template : "",
+        blankPage,
         theme:
-          kind === "article"
+          kind === "article" && !blankPage
             ? context!.palette
             : {
                 background: "#FFFFFF",
@@ -312,7 +318,8 @@ export async function renderMagazine(
     for (const item of stories) {
       const row = el("div", "toc-row");
       const label = el("div", "toc-story");
-      label.append(el("span", "toc-story-title", item.story.title));
+      if (!item.story.pagePair)
+        label.append(el("span", "toc-story-title", item.story.title));
       if (item.story.visual?.summary)
         label.append(el("p", "toc-summary", item.story.visual.summary));
       if (item.story.visual?.thumbnail)
@@ -359,7 +366,7 @@ export async function renderMagazine(
           );
           columns[columnIndex].append(header);
         }
-        columns[columnIndex].append(row);
+        if (!item.story.pagePair) columns[columnIndex].append(row);
       }
       addRow();
       if (!columnFits()) {
@@ -380,13 +387,31 @@ export async function renderMagazine(
           id: stories.find((t) => t.sectionId === item.sectionId)!.story.id,
           number: headerNumber,
         });
-      entries.push({ id: item.story.id, number });
+      if (!item.story.pagePair) entries.push({ id: item.story.id, number });
       lastSection = item.sectionId;
     }
     const frontMatterPages = root.children.length;
     root.children[1].setAttribute("data-contents", "primary");
     for (const item of stories) {
       context = item;
+      if (item.story.pagePair) {
+        ({ page, body } = make(
+          "article",
+          "article",
+          `opening-${item.story.pagePair}`,
+        ));
+        const physicalPage = root.children.length;
+        const folio = folioForPage(physicalPage, "article", frontMatterPages)!;
+        storyPages[item.story.id] = { physicalPage, folio };
+        page.dataset.storyId = item.story.id;
+        page.dataset.sectionId = item.sectionId;
+        ({ page, body } = make("article", "article", "continuation"));
+        page.dataset.storyId = item.story.id;
+        page.dataset.sectionId = item.sectionId;
+        for (const entry of entries.filter((e) => e.id === item.story.id))
+          entry.number.textContent = String(folio).padStart(2, "0");
+        continue;
+      }
       fresh();
       const physicalPage = root.children.length;
       const folio = folioForPage(physicalPage, "article", frontMatterPages)!;

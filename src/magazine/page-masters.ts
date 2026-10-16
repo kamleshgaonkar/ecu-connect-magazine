@@ -16,6 +16,7 @@ export type PageMasterOptions = {
   heroLayout?: "large" | "full";
   sectionNumber?: number;
   sectionStart?: boolean;
+  blankPage?: "opening-white" | "opening-split" | "continuation";
 };
 /** Self-contained DOM components used by the exact same document in preview/PDF.
  * Their source is serialized into the sandbox; do not add module/global dependencies.
@@ -38,17 +39,34 @@ export function createPageMaster(
   page.dataset.master = master;
   for (const [name, value] of Object.entries(theme))
     page.style.setProperty(`--theme-${name}`, value);
-  if (options.kind === "article" && issue.furniture.topAccent) {
+  if (options.blankPage) {
+    page.classList.add("blank-section-page", `blank-${options.blankPage}`);
+    page.dataset.pageRole =
+      options.blankPage === "continuation" ? "continuation" : "opening";
+    if (options.blankPage !== "continuation") {
+      const ordinal = document.createElement("div");
+      ordinal.className = "blank-section-number";
+      ordinal.textContent = String(options.sectionNumber).padStart(2, "0");
+      ordinal.setAttribute("aria-hidden", "true");
+      page.append(ordinal);
+    }
+  }
+  if (
+    options.kind === "article" &&
+    (options.blankPage || issue.furniture.topAccent)
+  ) {
     const tab = document.createElement("div");
     tab.className = "top-accent";
     tab.setAttribute("aria-hidden", "true");
     page.append(tab);
   }
-  if (issue.furniture.header && kind === "article") {
+  if ((options.blankPage || issue.furniture.header) && kind === "article") {
     const header = document.createElement("header");
     header.className = "section-header";
     header.textContent =
-      (master === "opener" || master === "editorial") &&
+      (master === "opener" ||
+        master === "editorial" ||
+        options.blankPage === "opening-split") &&
       sectionName === "What's Up @ ECU Worldwide"
         ? "What's Up @\nECU Worldwide"
         : sectionName;
@@ -92,17 +110,17 @@ export function createPageMaster(
   page.append(body);
   if (
     kind === "article" &&
-    (issue.furniture.footer || issue.furniture.folios)
+    (options.blankPage || issue.furniture.footer || issue.furniture.folios)
   ) {
     const footer = document.createElement("footer");
     footer.className = "page-footer";
     const label = document.createElement("span");
     label.className = "footer-label";
-    if (issue.furniture.footer)
+    if (options.blankPage || issue.furniture.footer)
       label.textContent = `ECU CONNECT VOL. ${issue.volume}${issue.date ? " | " + issue.date : ""}${issue.sample ? " · SAMPLE · NOT APPROVED" : ""}`;
     const folio = document.createElement("span");
     folio.className = "page-number";
-    if (!issue.furniture.folios) folio.hidden = true;
+    if (!options.blankPage && !issue.furniture.folios) folio.hidden = true;
     footer.append(label, folio);
     page.append(footer);
   }

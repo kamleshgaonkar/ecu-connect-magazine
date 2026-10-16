@@ -112,7 +112,8 @@ export const issueSchema = z
                       .strict()
                       .optional(),
                     id: z.string().min(1).max(100),
-                    title: z.string().trim().min(1).max(200),
+                    title: z.string().trim().max(200),
+                    pagePair: z.enum(["white", "split"]).optional(),
                     subtitle: z.string().max(500),
                     byline: z.string().max(150),
                     blocks: z.array(blockSchema).max(100),
@@ -137,6 +138,12 @@ export const issueSchema = z
     ];
     for (const section of issue.sections)
       for (const story of section.stories) {
+        if (!story.title && !story.pagePair)
+          ctx.addIssue({
+            code: "custom",
+            message:
+              "Story titles cannot be empty unless they use a blank page pair.",
+          });
         const assigned =
           story.grid?.rows.flatMap((r) =>
             r.cells.flatMap((c) => c.contentIds),
@@ -186,6 +193,29 @@ export function newStory(): Story {
     subtitle: "",
     byline: "",
     blocks: [{ id: id(), type: "paragraph", text: "" }],
+  };
+}
+/** Only newly created sections opt into fixed blank page pairs. Legacy data is unchanged. */
+export function newSection(name: string): Section {
+  return {
+    id: id(),
+    name,
+    enabled: true,
+    template:
+      name === "Cover Story"
+        ? "feature"
+        : name === "Notice Board"
+          ? "bulletin"
+          : "dispatch",
+    theme: "inherit",
+    stories: [
+      {
+        ...newStory(),
+        title: "",
+        blocks: [],
+        pagePair: name === "What's Up @ ECU Worldwide" ? "split" : "white",
+      },
+    ],
   };
 }
 export function newIssue(title: string, volume: number): Issue {

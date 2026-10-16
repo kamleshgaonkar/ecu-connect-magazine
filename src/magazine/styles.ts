@@ -28,6 +28,16 @@ export const magazineStyles = `
 /* T03 — photo/fade opening; plain/paper continuations use existing masters. */
 .opener-photo{position:absolute;top:0;left:0;width:210mm;height:137mm;object-fit:cover}.opener-fade{position:absolute;top:106mm;left:0;right:0;height:32mm;background:linear-gradient(transparent,var(--theme-background));pointer-events:none}.opener .section-header{z-index:2;top:54mm;color:white;font-size:18.62pt;text-shadow:0 1px 3px #0009;max-width:85mm;white-space:pre-line}.opener .top-accent{z-index:2;height:2.96mm}.section-ordinal{position:absolute;left:15mm;top:2mm;font-family:${t.fonts.condensed};font-size:172.17pt;line-height:1;color:#ffffff80}.opener .page-body{top:135mm;height:137mm}.opener .story-title{font-size:30pt;line-height:1.1;margin-bottom:2mm}.opener .byline{margin:0 0 5mm;padding-bottom:3mm;border-bottom:.5mm solid var(--ecu-yellow)}.opener .subtitle{font-size:16pt;line-height:1.3;margin-bottom:3mm}.opener-left .page-body{right:auto;width:85mm}.opener-right .page-body{left:auto;width:85mm}.opener-left .story-title,.opener-right .story-title{font-size:24pt}.hero-full .opener-photo{height:297mm}.hero-full .opener-fade{display:none}.hero-full .page-body{background:var(--theme-background);padding:6mm;border-radius:3mm;height:132mm}.hero-full .page-footer{background:var(--theme-background);padding:1mm;border-radius:1mm}.story-media{margin:0 0 4mm;break-inside:avoid}.story-photo{display:block;width:100%;height:65mm;object-fit:cover}.story-media figcaption{font-size:8pt;line-height:1.3;margin-top:2mm}
 .photo-credit{position:absolute;left:15mm;right:15mm;font-size:6pt;line-height:1.3;color:var(--ecu-blue);background:#ffffffdf;padding:1mm;text-align:center}.cover-photo-credit{bottom:10mm}.opener-photo-credit{top:117mm}.toc-media-credit{font-size:6pt;line-height:1.3;margin:1mm 0 0}.media-warning{outline:2px solid #b0441c}
+/* Explicitly opted-in new-section blanks; existing masters retain their output. */
+.blank-section-page{background:#fff;color:#000;--theme-ink:#000;--theme-accent:#034EA2}
+.blank-section-page>.top-accent{left:15mm;width:49.6mm;height:2.26mm}
+.blank-section-page .page-body{background:transparent}
+.blank-opening-white .page-body,.blank-opening-split .page-body{top:78mm;height:194mm}
+.blank-section-number{position:absolute;left:15mm;top:1mm;font-family:${t.fonts.condensed};font-size:172.17pt;line-height:1;color:#808080}
+.blank-opening-white>.section-header,.blank-opening-split>.section-header{top:52mm;left:17.3mm;max-width:85mm;color:#000;font-weight:600;white-space:pre-line}
+.blank-opening-split{background:linear-gradient(to bottom,#000 0 148mm,#FFF6DB 148mm 100%)}
+.blank-opening-split>.section-header{color:#fff;font-weight:500;text-align:center;width:55mm;max-width:55mm;left:12.8mm}
+.blank-continuation>.section-header{left:19.2mm;top:4.8mm;color:#034EA2}
 @page{size:${t.page.widthMm}mm ${t.page.heightMm}mm;margin:0}@media print{body{background:white}.pages{padding:0;gap:0;display:block}.page{box-shadow:none;margin:0}.page:last-child{break-after:auto}}
 /* T04: explicit measured narrative columns; figures and callouts never split. */
 /* Windows font descent extends the masthead line box. Extra invisible measurement
