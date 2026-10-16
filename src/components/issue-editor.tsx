@@ -17,6 +17,7 @@ import { CoverControls, StoryVisualControls } from "./visual-controls";
 import { Preview, type PreviewPageSelection } from "./preview";
 import { HeadlineControls, StoryBadgeControls } from "./headline-controls";
 import { BackgroundDesign } from "./background-design";
+import { StoryContent } from "./story-content";
 import { GridEditor } from "./grid-editor";
 import { toggleMagazineVisibility } from "../studio/visibility";
 import { StoriesPanel } from "./stories-panel";
@@ -756,6 +757,7 @@ function StoryEditor({
         pageIndex={pageIndex}
         onChange={onChange}
       />
+      <StoryContent story={story} onChange={onChange} />
       <GridEditor
         story={story}
         onChange={onChange}

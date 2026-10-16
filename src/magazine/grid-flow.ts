@@ -5,6 +5,8 @@ export function flowGridStory(
   story: Story,
   api: {
     body: () => HTMLElement;
+    content?: (block: Block) => HTMLElement;
+    splitTable?: (node: HTMLElement, fits: () => boolean) => HTMLElement | null;
     fresh: () => void;
     rich: (tag: string, cls: string, text: string) => HTMLElement;
     slice: (node: Node, start: number, end: number) => Node;
@@ -17,6 +19,8 @@ export function flowGridStory(
     grid.rows.flatMap((r) => r.cells.flatMap((c) => c.contentIds)),
   );
   function content(block: Block): HTMLElement {
+    if ((block.rich || block.widthPercent || block.component) && api.content)
+      return api.content(block);
     if (block.type === "figure") {
       const figure = api.image(block);
       figure.dataset.contentId = block.id;
@@ -103,10 +107,23 @@ export function flowGridStory(
     );
   }
   const pending = story.blocks
-    .filter((b) => !assigned.has(b.id) && (b.text || b.type === "figure"))
+    .filter(
+      (b) =>
+        !assigned.has(b.id) &&
+        (b.text ||
+          b.type === "figure" ||
+          b.component ||
+          b.rich ||
+          b.breakBefore === "page"),
+    )
     .map((b) => ({
       node: content(b),
-      type: b.type,
+      type:
+        b.component?.kind === "table"
+          ? "table"
+          : b.component
+            ? "figure"
+            : b.type,
       pageBreak: b.breakBefore === "page",
       columnBreak: b.breakBefore === "column",
     }));
@@ -297,8 +314,17 @@ export function flowGridStory(
           consumed++;
           continue;
         }
+        if (current.type === "table" && api.splitTable) {
+          const remainder = api.splitTable(node, hasRoom);
+          if (remainder) {
+            current.node = remainder;
+            consumed++;
+            break;
+          }
+        }
         node.remove();
         if (
+          current.type === "table" ||
           row.keepTogether ||
           current.type === "figure" ||
           current.type === "heading" ||
@@ -345,6 +371,28 @@ export function flowGridStory(
         fragment.replaceChildren(...api.slice(node, 0, best).childNodes);
         const remainder = node.cloneNode(false) as HTMLElement;
         remainder.append(...api.slice(node, best, chars.length).childNodes);
+        if (node.tagName === "OL") {
+          let used = 0,
+            completed = 0,
+            partial = false;
+          for (const item of Array.from(node.children)) {
+            const length = Array.from(item.textContent ?? "").length;
+            if (used + length <= best) {
+              completed++;
+              used += length;
+            } else {
+              partial = best > used;
+              break;
+            }
+          }
+          remainder.setAttribute(
+            "start",
+            String(Number(node.getAttribute("start") ?? 1) + completed),
+          );
+          if (partial && remainder.firstElementChild)
+            (remainder.firstElementChild as HTMLElement).style.listStyleType =
+              "none";
+        }
         current.node = remainder;
         consumed++;
         break;
@@ -385,6 +433,7 @@ export function flowGridStory(
       if (!renderRow({ ...row, breakBefore: false })) return;
     }
     if (consumed === before) {
+      if (pending[0]) api.body().append(pending[0].node);
       api.warn(
         "Remaining content cannot fit in the continuation grid for “" +
           story.title +

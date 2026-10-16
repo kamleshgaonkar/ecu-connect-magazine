@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { componentSchema, richBlockSchema } from "./content";
 import { backgroundSchema, pageBackgroundsSchema } from "./background";
 import { headlineLayoutSchema, storyBadgeSchema } from "./headline";
 import { gridSchema } from "./grid";
@@ -15,7 +16,7 @@ export const sectionNames = [
   "Holidays Around the World",
 ] as const;
 export const templates = templateIds;
-const blockSchema = z
+export const blockSchema = z
   .object({
     id: z.string().min(1).max(100),
     type: z.enum([
@@ -27,9 +28,12 @@ const blockSchema = z
       "callout",
       "caption",
     ]),
-    text: z.string().max(20000),
+    text: z.string().max(200000),
+    rich: richBlockSchema.optional(),
+    component: componentSchema.optional(),
     image: mediaReferenceSchema.optional(),
     figureHeightMm: z.number().min(20).max(180).optional(),
+    widthPercent: z.number().min(25).max(100).optional(),
     breakBefore: z.enum(["auto", "column", "page"]).optional(),
   })
   .strict();
@@ -130,7 +134,8 @@ export const issueSchema = z
                       .optional(),
                     subtitle: z.string().max(500),
                     byline: z.string().max(150),
-                    blocks: z.array(blockSchema).max(100),
+                    contentMode: z.literal("continuous").optional(),
+                    blocks: z.array(blockSchema).max(1000),
                     grid: gridSchema.optional(),
                   })
                   .strict(),
@@ -158,6 +163,18 @@ export const issueSchema = z
             message:
               "Story titles cannot be empty unless they use a blank page pair.",
           });
+        for (const block of story.blocks)
+          if (block.component?.kind === "table") {
+            const tableIds = block.component.rows.flatMap((row) => [
+              row.id,
+              ...row.cells.map((cell) => cell.id),
+            ]);
+            if (new Set(tableIds).size !== tableIds.length)
+              ctx.addIssue({
+                code: "custom",
+                message: "Table row and cell IDs must be unique.",
+              });
+          }
         const assigned =
           story.grid?.rows.flatMap((r) =>
             r.cells.flatMap((c) => c.contentIds),

@@ -573,7 +573,7 @@ export function Preview({
           )
         }
         title="A4 magazine pages"
-        sandbox="allow-scripts"
+        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
         srcDoc={doc.html ?? undefined}
         aria-busy={updating}
         className="magazine-frame"

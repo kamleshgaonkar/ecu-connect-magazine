@@ -1,5 +1,7 @@
+import { contentStyles } from "../content/styles";
 import { designTokens as t } from "./tokens";
-export const magazineStyles = `
+export const magazineStyles = `${contentStyles}
+
 :root{--ecu-blue:${t.colors.blue};--ecu-yellow:${t.colors.yellow};--body-font:${t.fonts.body};--display-font:${t.fonts.display}}
 *{box-sizing:border-box}html,body{margin:0;padding:0;font-family:var(--body-font);color:${t.colors.ink};overflow-wrap:anywhere}body{background:#e9eeeb}.pages{display:flex;flex-direction:column;gap:24px;align-items:center;padding:24px}
 .page{position:relative;width:${t.page.widthMm}mm;height:${t.page.heightMm}mm;flex:none;overflow:visible;background:var(--theme-background,white);color:var(--theme-ink,${t.colors.ink});box-shadow:0 4px 20px #203d3514;break-after:page}
@@ -65,4 +67,8 @@ export const magazineStyles = `
 .text-block.callout{background:var(--ecu-yellow);color:#1e1e1e;padding:6mm 10mm;text-align:center;border-radius:4mm;font-size:9pt;line-height:12pt}
 .editorial-figure{margin:0 0 5mm;break-inside:avoid}.editorial-image{width:100%;display:block;object-fit:contain;border-radius:4mm;border:.2mm solid #b5cce7}
 .editorial-figure figcaption{font-size:8pt;line-height:10pt;font-style:italic;margin-top:3mm;white-space:pre-wrap}
+
+/* Only visible photographic section openings use this transparent identity. */
+.photographic-section-identity>.section-ordinal,.photographic-section-identity>.blank-section-number{z-index:2;left:15mm;top:2mm;width:fit-content;max-width:85mm;color:#ffffffcc;background:transparent;text-shadow:0 1px 3px #0009}
+.photographic-section-identity>.section-header{z-index:2;left:15mm;right:auto;top:64mm;width:85mm;max-width:85mm;color:#fff;background:transparent;text-align:left;white-space:pre-line;text-shadow:0 1px 3px #0009}
 `;

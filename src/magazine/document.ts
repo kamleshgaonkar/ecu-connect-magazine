@@ -1,3 +1,6 @@
+import { createContentRenderer } from "../content/render";
+import { renderRichBlock } from "../content/text-dom";
+import { flowStoryContent, splitContentTable } from "../content/flow";
 import type { IssueInput } from "../domain/issue";
 import { buildRenderModel } from "./templates";
 import { createPageMaster, createCoverMaster } from "./page-masters";
@@ -40,6 +43,6 @@ export function magazineDocument(
  const mediaImage=${createMediaImage.toString()};
  const masters={page:${createPageMaster.toString()},cover:${createCoverMaster.toString()}};
  const folioForPage=${printedFolio.toString()};
- (${renderMagazine.toString()})(model,masters,mediaImage,folioForPage,${designTokens.page.maxPages},${serialize(renderId)},${applyPageBackground.toString()},${applyTextContrast.toString()},${applyHeadlineLayout.toString()},${createStoryBadge.toString()}${model.stories.some((item) => item.story.grid) ? "," + flowGridStory.toString() : ""});
+ (${renderMagazine.toString()})(model,masters,mediaImage,folioForPage,${designTokens.page.maxPages},${serialize(renderId)},${applyPageBackground.toString()},${applyTextContrast.toString()},${applyHeadlineLayout.toString()},${createStoryBadge.toString()},${renderRichBlock.toString()},${createContentRenderer.toString()},${flowStoryContent.toString()},${splitContentTable.toString()}${model.stories.some((item) => item.story.grid) ? "," + flowGridStory.toString() : ""});
  </script></body></html>`;
 }

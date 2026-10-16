@@ -1,3 +1,6 @@
+import type { createContentRenderer } from "../content/render";
+import type { renderRichBlock } from "../content/text-dom";
+import type { flowStoryContent, splitContentTable } from "../content/flow";
 import type { applyHeadlineLayout, createStoryBadge } from "./headline";
 import type { applyTextContrast } from "./contrast";
 import type { applyPageBackground } from "./background";
@@ -37,9 +40,18 @@ export async function renderMagazine(
   contrast: typeof applyTextContrast,
   headlineLayout: typeof applyHeadlineLayout,
   storyBadge: typeof createStoryBadge,
+  richBlock: typeof renderRichBlock,
+  contentRenderer: typeof createContentRenderer,
+  contentFlow: typeof flowStoryContent,
+  splitTable: typeof splitContentTable,
   gridFlow?: typeof flowGridStory,
 ) {
   const { issue, stories } = model;
+  const contentNode = contentRenderer(
+    richBlock,
+    mediaImage,
+    issue.renderAssets ?? [],
+  );
   const root = document.getElementById("pages")!;
   const warnings: string[] = [];
   const notices = [
@@ -269,6 +281,82 @@ export async function renderMagazine(
       if (offset < chars.length) advance();
     }
   }
+  function preserveCustomPages() {
+    const story = context!.story;
+    const authoredContinuation = story.grid?.continuation.some((row) =>
+      row.cells.some((cell) =>
+        cell.blocks?.some(
+          (block) =>
+            block.kind === "manual" &&
+            (block.text || block.image || block.type === "divider"),
+        ),
+      ),
+    );
+    const minimum = Math.max(
+      authoredContinuation ? 2 : 1,
+      ...Object.keys(story.pageBackgrounds ?? {}).map((key) => Number(key) + 1),
+    );
+    let count = root.querySelectorAll(
+      `[data-story-id="${CSS.escape(story.id)}"]`,
+    ).length;
+    while (count++ < minimum) {
+      fresh(true);
+      if (story.grid && gridFlow)
+        gridFlow(
+          {
+            ...story,
+            blocks: [],
+            grid: { ...story.grid, rows: story.grid.continuation },
+          },
+          {
+            body: () => body,
+            fresh: () => fresh(true),
+            rich,
+            content: contentNode,
+            splitTable,
+            slice: sliceStyled,
+            warn: (message) => warnings.push(message),
+            image: () => el("div"),
+          },
+        );
+    }
+  }
+  function continuousStory() {
+    const story = context!.story;
+    if (story.grid && gridFlow) {
+      gridFlow(story, {
+        body: () => body,
+        fresh: () => fresh(true),
+        rich,
+        content: contentNode,
+        splitTable,
+        slice: sliceStyled,
+        warn: (message) => warnings.push(message),
+        image: (block) => {
+          const figure = el("figure", "editorial-figure");
+          const image = mediaImage(
+            block.image,
+            issue.renderAssets ?? [],
+            "editorial-image",
+            "Select an approved inline image",
+          );
+          image.style.height = (block.figureHeightMm ?? 70) + "mm";
+          figure.append(image);
+          if (block.text) figure.append(el("figcaption", "", block.text));
+          return figure;
+        },
+      });
+      return;
+    }
+    contentFlow(story.blocks, {
+      body: () => body,
+      advance,
+      slice: sliceStyled,
+      warn: (message) => warnings.push(message),
+      splitTable,
+      render: contentNode,
+    });
+  }
   try {
     window.__magazineReady = false;
     await Promise.all([
@@ -460,6 +548,10 @@ export async function renderMagazine(
         page.dataset.sectionId = item.sectionId;
         for (const entry of entries.filter((e) => e.id === item.story.id))
           entry.number.textContent = String(folio).padStart(2, "0");
+        if (item.story.contentMode === "continuous") {
+          continuousStory();
+          preserveCustomPages();
+        }
         continue;
       }
       fresh();
@@ -537,6 +629,8 @@ export async function renderMagazine(
             "Story image/caption exceeds an A4 page: " + item.story.title,
           );
       }
+      if (item.story.contentMode === "continuous" && !item.story.grid)
+        continuousStory();
       if (item.story.grid && gridFlow) {
         gridFlow(item.story, {
           body: () => body,
@@ -544,6 +638,8 @@ export async function renderMagazine(
             fresh(true);
           },
           rich,
+          content: contentNode,
+          splitTable,
           slice: sliceStyled,
           warn: (message) => warnings.push(message),
           image: (block) => {
@@ -574,7 +670,8 @@ export async function renderMagazine(
           },
         });
       }
-      for (const [blockIndex, block] of (item.story.grid
+      for (const [blockIndex, block] of (item.story.grid ||
+      item.story.contentMode === "continuous"
         ? []
         : item.story.blocks
       ).entries()) {
@@ -645,6 +742,7 @@ export async function renderMagazine(
               block.type === "heading",
           );
       }
+      if (item.story.contentMode === "continuous") preserveCustomPages();
       for (const entry of entries.filter((e) => e.id === item.story.id))
         entry.number.textContent = String(folio).padStart(2, "0");
     }
@@ -684,6 +782,19 @@ export async function renderMagazine(
             "”. Select an image or choose another background before export.",
         );
     }
+    for (const { story } of stories)
+      if (story.contentMode === "continuous")
+        for (const block of story.blocks) {
+          if (
+            (block.type === "figure" ||
+              block.component?.kind === "profile" ||
+              block.component?.kind === "testimonial") &&
+            !block.image
+          )
+            warnings.push(
+              `Story image/portrait missing in ${story.title || "Untitled story"}. Select an approved original before PDF export.`,
+            );
+        }
     const references = [
       issue.cover?.image,
       issue.cover?.logo,
