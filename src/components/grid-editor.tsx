@@ -42,8 +42,10 @@ function boundedWidth(value: number, pair: number) {
 export function GridEditor({
   story,
   onChange,
+  structureOnly = false,
 }: {
   story: Story;
+  structureOnly?: boolean;
   onChange: (story: Story) => void;
 }) {
   const [baseGrid] = useState(() => initialGrid(story));
@@ -230,7 +232,12 @@ export function GridEditor({
     );
   }
   return (
-    <section className="visual-grid-editor" aria-label="Visual Grid Editor">
+    <section
+      className={
+        "visual-grid-editor" + (structureOnly ? " basic-grid-editor" : "")
+      }
+      aria-label="Visual Grid Editor"
+    >
       <div
         className="grid-page-variants"
         role="group"
@@ -246,7 +253,7 @@ export function GridEditor({
             setRowOptions(null);
           }}
         >
-          Opening layout
+          {structureOnly ? "Opening Page" : "Opening layout"}
         </button>
         <button
           className="text-button"
@@ -256,7 +263,7 @@ export function GridEditor({
             setSelected(null);
           }}
         >
-          Continuation layout
+          {structureOnly ? "Continuation Page" : "Continuation layout"}
         </button>
       </div>
       <div className="grid-editor-header">
@@ -420,6 +427,24 @@ export function GridEditor({
                       Move down
                     </button>
                     <button
+                      disabled={
+                        structureOnly &&
+                        row.cells.some(
+                          (c) =>
+                            c.contentIds.length > 0 ||
+                            Boolean(c.blocks?.length),
+                        )
+                      }
+                      title={
+                        structureOnly &&
+                        row.cells.some(
+                          (c) =>
+                            c.contentIds.length > 0 ||
+                            Boolean(c.blocks?.length),
+                        )
+                          ? "Saved content is hidden. This row is protected from deletion."
+                          : undefined
+                      }
                       onClick={() => {
                         if (
                           confirm(

@@ -718,9 +718,9 @@ function StoryEditor({
           />
         </label>
       </div>
-      {/* Temporarily hidden; keep layout/content editors mounted for restoration. */}
+      <GridEditor story={story} onChange={onChange} structureOnly />
+      {/* Keep advanced editors mounted but hidden for later restoration. */}
       <div hidden>
-        <GridEditor story={story} onChange={onChange} />
         <div className="story-options">
           <StoryVisualControls story={story} onChange={onChange} />
           <StoryDesignControls story={story} onChange={onChange} />

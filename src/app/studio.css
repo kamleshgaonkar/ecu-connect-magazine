@@ -2243,3 +2243,16 @@ html:has(.editor-shell), body:has(.editor-shell) { height: 100%; overflow: hidde
 .grid-preset-choices { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
 .grid-page-variants { display:flex; gap:16px; margin-top:18px; border-bottom:1px solid #eee; padding-bottom:10px; font-size:12px; }
 .grid-page-variants [aria-pressed=true] { color:#111; box-shadow:0 2px #111; }
+
+/* Basic structure view: hide presentation only, retaining all saved placements. */
+.basic-grid-editor > :not(.grid-page-variants):not(.grid-canvas):not([role="status"]),
+.basic-grid-editor .visual-grid-cell > :not(.grid-column-divider),
+.basic-grid-editor .grid-row-settings,
+.basic-grid-editor .grid-row-actions > button[aria-label^="Row options"],
+.basic-grid-editor .grid-row-menu > button:first-child {
+  display: none !important;
+}
+.basic-grid-editor .visual-grid-cell { border: 1px solid #e8e8e8; min-height: 82px; }
+@media (hover: hover) {
+  .basic-grid-editor .visual-grid-row:not(:hover):not(:focus-within) .grid-row-actions { opacity: 0; pointer-events: none; }
+}
