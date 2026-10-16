@@ -38,7 +38,7 @@ async function saved(page: Page): Promise<Issue> {
     () => JSON.parse(localStorage.getItem("ecu-connect:issues:v1")!)[0],
   );
 }
-test("Add Section generates blank opening and continuation pages, saves/reloads and exports them", async ({
+test("Add Section generates only its opening page, saves/reloads and exports without blank continuations", async ({
   page,
   request,
 }) => {
@@ -47,9 +47,8 @@ test("Add Section generates blank opening and continuation pages, saves/reloads 
   await open(page, issue);
   await add(page, "Cover Story");
   const frame = page.frameLocator("iframe");
-  await expect(frame.locator(".blank-section-page")).toHaveCount(2);
+  await expect(frame.locator(".blank-section-page")).toHaveCount(1);
   await expect(frame.locator(".blank-section-page .page-body")).toHaveText([
-    "",
     "",
   ]);
   await expect(
@@ -61,11 +60,10 @@ test("Add Section generates blank opening and continuation pages, saves/reloads 
     frame.locator(".blank-opening-white .blank-section-number"),
   ).toHaveText("01");
   await expect(frame.locator(".blank-section-page .section-header")).toHaveText(
-    ["Cover Story", "Cover Story"],
+    ["Cover Story"],
   );
   await expect(frame.locator(".blank-section-page .page-number")).toHaveText([
     "1",
-    "2",
   ]);
   await expect(
     page.getByRole("textbox", { name: "Headline", exact: true }),
@@ -77,7 +75,7 @@ test("Add Section generates blank opening and continuation pages, saves/reloads 
     page.getByRole("textbox", { name: "Author", exact: true }),
   ).toHaveValue("");
   await add(page, "What's Up @ ECU Worldwide");
-  await expect(frame.locator(".blank-section-page")).toHaveCount(4);
+  await expect(frame.locator(".blank-section-page")).toHaveCount(2);
   await expect(
     frame.locator(".blank-opening-split .blank-section-number"),
   ).toHaveText("02");
@@ -97,35 +95,34 @@ test("Add Section generates blank opening and continuation pages, saves/reloads 
   ).toBe(true);
   await page.reload();
   await ready(page);
-  await expect(frame.locator(".blank-section-page")).toHaveCount(4);
+  await expect(frame.locator(".blank-section-page")).toHaveCount(2);
   await expect(frame.locator(".blank-section-page .page-number")).toHaveText([
     "1",
     "2",
-    "3",
-    "4",
   ]);
   await expect(frame.locator(".contents .toc-story-title")).toHaveCount(0);
   await expect(frame.locator(".contents .toc-section-number")).toHaveText([
     "01",
-    "03",
+    "02",
   ]);
-  await frame
-    .locator(".blank-opening-white")
-    .screenshot({ path: "test-results/blank-opening-white.png" });
-  await frame
-    .locator(".blank-continuation")
-    .first()
-    .screenshot({ path: "test-results/blank-continuation.png" });
-  await frame
-    .locator(".blank-opening-split")
-    .screenshot({ path: "test-results/blank-opening-split.png" });
+  await expect(frame.locator(".blank-continuation")).toHaveCount(0);
+  const fullscreen = page.getByRole("button", {
+    name: "Open full-screen preview",
+    exact: true,
+  });
+  await fullscreen.focus();
+  await fullscreen.press("Enter");
+  await expect(frame.locator("#page-thumbnails button")).toHaveCount(4);
+  await page
+    .getByRole("button", { name: "Close full-screen preview", exact: true })
+    .press("Enter");
   const response = await request.post("/api/export", { data: stored });
   expect(response.status()).toBe(200);
   const pdf = await response.body();
   expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
   expect(
     (pdf.toString("latin1").match(/\/Type\s*\/Page\b/g) ?? []).length,
-  ).toBe(6);
+  ).toBe(4);
 });
 test("section names, numbering, volume and folios update while existing section data is retained", async ({
   page,
@@ -146,7 +143,7 @@ test("section names, numbering, volume and folios update while existing section 
     .click();
   await ready(page);
   await expect(frame.locator(".blank-section-page .section-header")).toHaveText(
-    ["Updated blank section", "Updated blank section"],
+    ["Updated blank section"],
   );
   await expect(frame.locator(".blank-section-number")).toHaveText(
     String(newIndex).padStart(2, "0"),
@@ -159,23 +156,23 @@ test("section names, numbering, volume and folios update while existing section 
   await ready(page);
   await expect(
     frame.locator(".blank-section-page .footer-label"),
-  ).toContainText(["VOL. 22 | November 2026", "VOL. 22 | November 2026"]);
+  ).toContainText(["VOL. 22 | November 2026"]);
   const stored = await saved(page);
   expect(
     stored.sections.filter((s) => legacy.some((old) => old.id === s.id)),
   ).toEqual(legacy);
 });
-test("all seven section styles generate exactly two blank A4 pages without placeholders", async ({
+test("all seven section styles generate one A4 opening each without placeholders", async ({
   page,
 }) => {
   const issue = newIssue("All blank sections", 21);
   issue.sections = sectionNames.map(newSection);
   await page.setContent(magazineDocument(issue));
   await page.waitForFunction(() => window.__magazineReady);
-  await expect(page.locator(".blank-section-page")).toHaveCount(14);
+  await expect(page.locator(".blank-section-page")).toHaveCount(7);
   await expect(page.locator(".blank-opening-white")).toHaveCount(6);
   await expect(page.locator(".blank-opening-split")).toHaveCount(1);
-  await expect(page.locator(".blank-continuation")).toHaveCount(7);
+  await expect(page.locator(".blank-continuation")).toHaveCount(0);
   await expect(page.locator(".blank-section-number")).toHaveText([
     "01",
     "02",
@@ -187,7 +184,7 @@ test("all seven section styles generate exactly two blank A4 pages without place
   ]);
   expect(
     await page.locator(".blank-section-page .page-body").allTextContents(),
-  ).toEqual(Array(14).fill(""));
+  ).toEqual(Array(7).fill(""));
   const labelLines = await page
     .locator(".blank-opening-split .section-header")
     .evaluate(

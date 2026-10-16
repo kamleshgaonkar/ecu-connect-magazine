@@ -70,9 +70,7 @@ for (const storyIndex of [0, 1, 2]) {
     await expect(frame.locator(".contents .toc-story-title")).toContainText([
       "Index Headline",
     ]);
-    await expect(frame.locator(".blank-continuation .page-body")).toHaveText(
-      "",
-    );
+    await expect(frame.locator(".blank-continuation")).toHaveCount(0);
     await page
       .getByRole("button", { name: "Continuation Page", exact: true })
       .click();
@@ -120,6 +118,17 @@ for (const storyIndex of [0, 1, 2]) {
       await expect(opening).not.toHaveClass(/blank-section-page/);
       await expect(opening).toContainText("Preserved article content");
     }
+    await expect(opening.locator(".page-number")).toHaveText(
+      String(storyIndex + 1),
+    );
+    await expect(
+      frame
+        .locator(".toc-row")
+        .filter({
+          has: frame.locator(".toc-story-title", { hasText: "Index Headline" }),
+        })
+        .locator(".toc-number"),
+    ).toHaveText(String(storyIndex + 1).padStart(2, "0"));
     const stored = await page.evaluate(
       () => JSON.parse(localStorage.getItem("ecu-connect:issues:v1")!)[0],
     );
@@ -133,7 +142,7 @@ for (const storyIndex of [0, 1, 2]) {
     expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
     expect(
       (pdf.toString("latin1").match(/\/Type\s*\/Page\b/g) ?? []).length,
-    ).toBe(4 + storyIndex);
+    ).toBe(3 + storyIndex);
   });
 }
 
@@ -159,7 +168,7 @@ test("white opening uses linked fields safely and continuation stays blank", asy
   await expect(page.locator(".blank-opening-white .byline")).toHaveText(
     "Author",
   );
-  await expect(page.locator(".blank-continuation .page-body")).toHaveText("");
+  await expect(page.locator(".blank-continuation")).toHaveCount(0);
   expect(await page.evaluate(() => window.__magazineResult!.warnings)).toEqual(
     [],
   );

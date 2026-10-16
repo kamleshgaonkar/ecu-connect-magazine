@@ -417,9 +417,6 @@ export async function renderMagazine(
         storyPages[item.story.id] = { physicalPage, folio };
         page.dataset.storyId = item.story.id;
         page.dataset.sectionId = item.sectionId;
-        ({ page, body } = make("article", "article", "continuation"));
-        page.dataset.storyId = item.story.id;
-        page.dataset.sectionId = item.sectionId;
         for (const entry of entries.filter((e) => e.id === item.story.id))
           entry.number.textContent = String(folio).padStart(2, "0");
         continue;
