@@ -318,7 +318,7 @@ export async function renderMagazine(
     for (const item of stories) {
       const row = el("div", "toc-row");
       const label = el("div", "toc-story");
-      if (!item.story.pagePair)
+      if (!item.story.pagePair || item.story.title)
         label.append(el("span", "toc-story-title", item.story.title));
       if (item.story.visual?.summary)
         label.append(el("p", "toc-summary", item.story.visual.summary));
@@ -366,7 +366,8 @@ export async function renderMagazine(
           );
           columns[columnIndex].append(header);
         }
-        if (!item.story.pagePair) columns[columnIndex].append(row);
+        if (!item.story.pagePair || item.story.title)
+          columns[columnIndex].append(row);
       }
       addRow();
       if (!columnFits()) {
@@ -387,7 +388,8 @@ export async function renderMagazine(
           id: stories.find((t) => t.sectionId === item.sectionId)!.story.id,
           number: headerNumber,
         });
-      if (!item.story.pagePair) entries.push({ id: item.story.id, number });
+      if (!item.story.pagePair || item.story.title)
+        entries.push({ id: item.story.id, number });
       lastSection = item.sectionId;
     }
     const frontMatterPages = root.children.length;
@@ -400,6 +402,16 @@ export async function renderMagazine(
           "article",
           `opening-${item.story.pagePair}`,
         ));
+        const heading = el("div", "story-heading");
+        for (const [field, tag, className] of [
+          ["title", "h1", "story-title"],
+          ["subtitle", "p", "subtitle"],
+          ["byline", "p", "byline"],
+        ] as const) {
+          const value = item.story.openingFields?.[field] ?? item.story[field];
+          if (value) heading.append(el(tag, className, value));
+        }
+        if (heading.childElementCount) body.append(heading);
         const physicalPage = root.children.length;
         const folio = folioForPage(physicalPage, "article", frontMatterPages)!;
         storyPages[item.story.id] = { physicalPage, folio };

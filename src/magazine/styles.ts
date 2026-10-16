@@ -33,6 +33,7 @@ export const magazineStyles = `
 .blank-section-page>.top-accent{left:15mm;width:49.6mm;height:2.26mm}
 .blank-section-page .page-body{background:transparent}
 .blank-opening-white .page-body,.blank-opening-split .page-body{top:78mm;height:194mm}
+.blank-opening-split .page-body{top:160mm;height:112mm}
 .blank-section-number{position:absolute;left:15mm;top:1mm;font-family:${t.fonts.condensed};font-size:172.17pt;line-height:1;color:#808080}
 .blank-opening-white>.section-header,.blank-opening-split>.section-header{top:52mm;left:17.3mm;max-width:85mm;color:#000;font-weight:600;white-space:pre-line}
 .blank-opening-split{background:linear-gradient(to bottom,#000 0 148mm,#FFF6DB 148mm 100%)}

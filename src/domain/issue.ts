@@ -114,6 +114,14 @@ export const issueSchema = z
                     id: z.string().min(1).max(100),
                     title: z.string().trim().max(200),
                     pagePair: z.enum(["white", "split"]).optional(),
+                    openingFields: z
+                      .object({
+                        title: z.string().max(200).optional(),
+                        subtitle: z.string().max(500).optional(),
+                        byline: z.string().max(150).optional(),
+                      })
+                      .strict()
+                      .optional(),
                     subtitle: z.string().max(500),
                     byline: z.string().max(150),
                     blocks: z.array(blockSchema).max(100),

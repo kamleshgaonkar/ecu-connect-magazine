@@ -81,3 +81,21 @@ describe("new-section blank page pairs", () => {
     }
   });
 });
+
+describe("opening field persistence", () => {
+  it("preserves independent overrides, including intentionally blank values", () => {
+    const issue = structuredClone(sampleIssue);
+    const section = newSection("Cover Story");
+    const story = section.stories[0];
+    Object.assign(story, {
+      title: "Index headline",
+      subtitle: "Original",
+      byline: "Author",
+    });
+    story.openingFields = { title: "Display headline", subtitle: "" };
+    issue.sections.push(section);
+    const saved = migrateIssue(JSON.parse(JSON.stringify(issue)));
+    expect(saved.sections.at(-1)!.stories[0]).toEqual(story);
+    expect(saved.sections.at(-1)!.stories[0].title).toBe("Index headline");
+  });
+});

@@ -266,6 +266,48 @@ export function GridEditor({
           {structureOnly ? "Continuation Page" : "Continuation layout"}
         </button>
       </div>
+      {story.pagePair && !editingContinuation && (
+        <div className="opening-page-fields" aria-label="Opening Page fields">
+          {(
+            [
+              ["title", "Headline", 200],
+              ["subtitle", "Subheadline", 500],
+              ["byline", "Author", 150],
+            ] as const
+          ).map(([field, label, maxLength]) => (
+            <label key={field}>
+              {label} on Opening Page
+              <input
+                aria-label={`${label} on Opening Page`}
+                value={story.openingFields?.[field] ?? story[field]}
+                maxLength={maxLength}
+                onChange={(event) =>
+                  onChange({
+                    ...story,
+                    openingFields: {
+                      ...story.openingFields,
+                      [field]: event.target.value,
+                    },
+                  })
+                }
+              />
+              {story.openingFields?.[field] !== undefined && (
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => {
+                    const fields = { ...story.openingFields };
+                    delete fields[field];
+                    onChange({ ...story, openingFields: fields });
+                  }}
+                >
+                  Use story {label.toLowerCase()}
+                </button>
+              )}
+            </label>
+          ))}
+        </div>
+      )}
       <div className="grid-editor-header">
         <h3>Page Layout Builder</h3>
         <div>
