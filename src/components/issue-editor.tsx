@@ -652,7 +652,7 @@ function StoryEditor({
       data-story-id={story.id}
       aria-label="Story editor"
     >
-      <div className="detail-header">
+      <div className="detail-header" hidden style={{ display: "none" }}>
         <nav className="breadcrumb" aria-label="Story location">
           <button className="text-button" onClick={onBack}>
             {sectionName || "Untitled section"}
@@ -698,7 +698,7 @@ function StoryEditor({
         />
       </label>
       <label>
-        Introduction
+        Subheadline
         <textarea
           rows={3}
           value={story.subtitle}
@@ -718,11 +718,14 @@ function StoryEditor({
           />
         </label>
       </div>
-      <GridEditor story={story} onChange={onChange} />
-      <div className="story-options">
-        <StoryVisualControls story={story} onChange={onChange} />
-        <StoryDesignControls story={story} onChange={onChange} />
-        <StoryAdvancedLayout story={story} onChange={onChange} />
+      {/* Temporarily hidden; keep layout/content editors mounted for restoration. */}
+      <div hidden>
+        <GridEditor story={story} onChange={onChange} />
+        <div className="story-options">
+          <StoryVisualControls story={story} onChange={onChange} />
+          <StoryDesignControls story={story} onChange={onChange} />
+          <StoryAdvancedLayout story={story} onChange={onChange} />
+        </div>
       </div>
     </article>
   );
