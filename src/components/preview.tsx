@@ -21,13 +21,20 @@ import { magazineDocument } from "../magazine/document";
 import { withPreviewControls } from "./preview-document";
 import { friendlyPreviewMessage } from "../studio/layout-catalog";
 
+export type PreviewPageSelection = { storyId: string; index: number } | null;
 export function Preview({
   issue,
   activeStoryId,
+  onPageSelect,
 }: {
   issue: Issue;
   activeStoryId?: string;
+  onPageSelect?: (page: PreviewPageSelection) => void;
 }) {
+  const pageSelectionCallback = useRef(onPageSelect);
+  useEffect(() => {
+    pageSelectionCallback.current = onPageSelect;
+  }, [onPageSelect]);
   const frame = useRef<HTMLIFrameElement>(null);
   const panel = useRef<HTMLElement>(null);
   const fullscreenButton = useRef<HTMLButtonElement>(null);
@@ -202,6 +209,13 @@ export function Preview({
         event.data.page >= 1 &&
         Number.isFinite(event.data.zoom)
       ) {
+        pageSelectionCallback.current?.(
+          typeof event.data.storyId === "string" &&
+            Number.isInteger(event.data.storyPage) &&
+            event.data.storyPage >= 0
+            ? { storyId: event.data.storyId, index: event.data.storyPage }
+            : null,
+        );
         pageRef.current = event.data.page;
         setPosition({ page: event.data.page, zoom: event.data.zoom });
       }

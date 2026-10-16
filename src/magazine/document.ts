@@ -2,6 +2,7 @@ import type { IssueInput } from "../domain/issue";
 import { buildRenderModel } from "./templates";
 import { createPageMaster, createCoverMaster } from "./page-masters";
 import { printedFolio } from "./folios";
+import { applyPageBackground } from "./background";
 import { flowGridStory } from "./grid-flow";
 import { renderMagazine } from "./pagination";
 import { designTokens } from "./tokens";
@@ -37,6 +38,6 @@ export function magazineDocument(
  const mediaImage=${createMediaImage.toString()};
  const masters={page:${createPageMaster.toString()},cover:${createCoverMaster.toString()}};
  const folioForPage=${printedFolio.toString()};
- (${renderMagazine.toString()})(model,masters,mediaImage,folioForPage,${designTokens.page.maxPages},${serialize(renderId)}${model.stories.some((item) => item.story.grid) ? "," + flowGridStory.toString() : ""});
+ (${renderMagazine.toString()})(model,masters,mediaImage,folioForPage,${designTokens.page.maxPages},${serialize(renderId)},${applyPageBackground.toString()}${model.stories.some((item) => item.story.grid) ? "," + flowGridStory.toString() : ""});
  </script></body></html>`;
 }

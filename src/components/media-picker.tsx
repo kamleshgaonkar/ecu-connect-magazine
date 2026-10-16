@@ -8,8 +8,10 @@ export function MediaPicker({
   label,
   value,
   onChange,
+  decorative = false,
 }: {
   label: string;
+  decorative?: boolean;
   value?: MediaReference;
   onChange: (reference: MediaReference | undefined) => void;
 }) {
@@ -181,37 +183,41 @@ export function MediaPicker({
               Selected image is unavailable in this browser.
             </p>
           )}
-          <div className="media-picker-fields">
-            <label>
-              Caption
-              <input
-                aria-label={label + " caption"}
-                value={value.caption}
-                maxLength={1000}
-                onChange={(e) =>
-                  onChange({ ...value, caption: e.target.value })
-                }
-              />
-            </label>
-            <label>
-              Credit
-              <input
-                aria-label={label + " credit"}
-                value={value.credit}
-                maxLength={300}
-                onChange={(e) => onChange({ ...value, credit: e.target.value })}
-              />
-            </label>
-            <label className="span-2">
-              Description for screen readers
-              <input
-                aria-label={label + " description"}
-                value={value.alt}
-                maxLength={500}
-                onChange={(e) => onChange({ ...value, alt: e.target.value })}
-              />
-            </label>
-          </div>
+          {!decorative && (
+            <div className="media-picker-fields">
+              <label>
+                Caption
+                <input
+                  aria-label={label + " caption"}
+                  value={value.caption}
+                  maxLength={1000}
+                  onChange={(e) =>
+                    onChange({ ...value, caption: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Credit
+                <input
+                  aria-label={label + " credit"}
+                  value={value.credit}
+                  maxLength={300}
+                  onChange={(e) =>
+                    onChange({ ...value, credit: e.target.value })
+                  }
+                />
+              </label>
+              <label className="span-2">
+                Description for screen readers
+                <input
+                  aria-label={label + " description"}
+                  value={value.alt}
+                  maxLength={500}
+                  onChange={(e) => onChange({ ...value, alt: e.target.value })}
+                />
+              </label>
+            </div>
+          )}
           <div className="media-picker-fields framing">
             <label>
               Fit

@@ -39,6 +39,8 @@ export function previewController(renderId: string) {
         type: "preview-position",
         renderId,
         page: activePage,
+        storyId: list[activePage - 1]?.dataset.storyId ?? null,
+        storyPage: Number(list[activePage - 1]?.dataset.storyPage ?? -1),
         zoom: Math.round(scale * 100),
       },
       "*",

@@ -48,8 +48,12 @@ test("three columns resize, fit a complete A4 page and preserve editor scroll", 
   const scroll = await page
     .locator(".workspace-editor")
     .evaluate((el) => el.scrollTop);
-  await page.locator(".workspace-preview").hover();
-  await page.getByRole("button", { name: "Open full-screen preview" }).click();
+  // Keyboard activation avoids racing the hover-only toolbar's fade/scroll behavior.
+  const fullscreen = page.getByRole("button", {
+    name: "Open full-screen preview",
+  });
+  await fullscreen.focus();
+  await fullscreen.press("Enter");
   await expect(
     page.getByRole("dialog", { name: "Full-screen magazine preview" }),
   ).toBeVisible();
@@ -173,8 +177,12 @@ test("desktop resolutions retain the top bar and keyboard thumbnails stay usable
     ).toBe(true);
   }
   const frame = page.frameLocator("iframe");
-  await page.locator(".workspace-preview").hover();
-  await page.getByRole("button", { name: "Open full-screen preview" }).click();
+  // Keyboard activation avoids racing the hover-only toolbar's fade/scroll behavior.
+  const fullscreen = page.getByRole("button", {
+    name: "Open full-screen preview",
+  });
+  await fullscreen.focus();
+  await fullscreen.press("Enter");
   const thumbnail = frame.getByRole("button", {
     name: "Go to page 2",
     exact: true,

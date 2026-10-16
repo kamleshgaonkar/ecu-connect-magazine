@@ -6,6 +6,12 @@ export function issueMediaReferences(issue: Issue): MediaReference[] {
   for (const section of issue.sections.filter((s) => s.enabled))
     for (const story of section.stories.filter((s) => s.enabled))
       references.push(
+        story.background?.mode === "image" ? story.background.image : undefined,
+        ...Object.values(story.pageBackgrounds ?? {}).flatMap((background) =>
+          background.mode === "image" && background.image
+            ? [background.image]
+            : [],
+        ),
         story.visual?.hero,
         story.visual?.thumbnail,
         ...story.media,

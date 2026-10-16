@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { backgroundSchema, pageBackgroundsSchema } from "./background";
 import { gridSchema } from "./grid";
 import { templateIds, pageMasterIds, themeIds } from "./design";
 import { mediaReferenceSchema, renderAssetSchema } from "./media";
@@ -113,6 +114,8 @@ export const issueSchema = z
                       .optional(),
                     id: z.string().min(1).max(100),
                     title: z.string().trim().max(200),
+                    background: backgroundSchema.optional(),
+                    pageBackgrounds: pageBackgroundsSchema.optional(),
                     pagePair: z.enum(["white", "split"]).optional(),
                     openingFields: z
                       .object({

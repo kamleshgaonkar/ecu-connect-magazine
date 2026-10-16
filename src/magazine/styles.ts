@@ -39,6 +39,13 @@ export const magazineStyles = `
 .blank-opening-split{background:linear-gradient(to bottom,#000 0 148mm,#FFF6DB 148mm 100%)}
 .blank-opening-split>.section-header{color:#fff;font-weight:500;text-align:center;width:55mm;max-width:55mm;left:12.8mm}
 .blank-continuation>.section-header{left:19.2mm;top:4.8mm;color:#034EA2}
+/* Opt-in isolated backgrounds; no style change to untouched pages or their content. */
+.page.custom-background{isolation:isolate}
+.page-background{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.page-background-image{position:absolute;left:0;width:100%;overflow:hidden}
+.background-photo{display:block;width:100%;height:100%}
+.background-fade{position:absolute;inset:0}
+.custom-background>.opener-photo,.custom-background>.opener-fade,.custom-background>.opener-photo-credit{visibility:hidden}
 @page{size:${t.page.widthMm}mm ${t.page.heightMm}mm;margin:0}@media print{body{background:white}.pages{padding:0;gap:0;display:block}.page{box-shadow:none;margin:0}.page:last-child{break-after:auto}}
 /* T04: explicit measured narrative columns; figures and callouts never split. */
 /* Windows font descent extends the masthead line box. Extra invisible measurement

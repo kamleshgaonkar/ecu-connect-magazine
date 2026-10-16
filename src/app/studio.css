@@ -2256,3 +2256,25 @@ html:has(.editor-shell), body:has(.editor-shell) { height: 100%; overflow: hidde
 @media (hover: hover) {
   .basic-grid-editor .visual-grid-row:not(:hover):not(:focus-within) .grid-row-actions { opacity: 0; pointer-events: none; }
 }
+
+/* Column 2 only: nonmodal background settings stay inside the editor width. */
+.background-design{position:relative;margin:16px 0}
+.background-design-summary{display:flex;align-items:center;gap:9px;border:1px solid #e5e5e5;border-radius:8px;padding:10px}
+.background-design-summary>div{flex:1;min-width:0}
+.background-design-summary strong,.background-design-summary small{display:block}
+.background-design-summary small{font-size:11px;color:#5f6368;margin-top:3px}
+.background-design-summary .button{padding:6px 10px;font-size:12px;min-height:32px}
+.background-design-panel{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;max-height:65vh;overflow:auto;background:#fff;border:1px solid #d9d9d9;border-radius:10px;box-shadow:0 8px 26px #0002;padding:14px;overscroll-behavior:contain}
+.background-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.background-design-panel label{font-size:12px;margin:10px 0;display:block}
+.background-design-panel input[type=color]{height:30px;padding:2px;width:100%}
+.background-design-panel input[type=range]{width:100%}
+.background-design-panel .background-override-toggle{display:flex;align-items:center;gap:7px}
+.background-design-panel input[type=checkbox]{width:auto;flex:none}
+.background-scope{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0;font-size:12px}
+.background-scope [aria-pressed=true]{font-weight:700;text-decoration:underline}
+.background-design-panel .media-picker-main{display:flex;gap:10px;flex-wrap:wrap}
+.background-design-panel .media-picker-thumb{width:75px;height:70px;flex:none}
+.background-design-panel .media-picker-actions{flex:1;min-width:160px}
+.background-design-panel .media-picker-fields{gap:8px}
+.background-design-panel .helper{font-size:11px;margin:6px 0}

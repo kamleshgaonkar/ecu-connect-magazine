@@ -1,3 +1,4 @@
+import type { applyPageBackground } from "./background";
 import type { flowGridStory } from "./grid-flow";
 import type { RenderModel } from "./templates";
 import type {
@@ -28,6 +29,7 @@ export async function renderMagazine(
   folioForPage: typeof printedFolio,
   maxPages: number,
   renderId: string,
+  background: typeof applyPageBackground,
   gridFlow?: typeof flowGridStory,
 ) {
   const { issue, stories } = model;
@@ -593,10 +595,35 @@ export async function renderMagazine(
       for (const entry of entries.filter((e) => e.id === item.story.id))
         entry.number.textContent = String(folio).padStart(2, "0");
     }
+    // Story-relative positions survive issue/section reordering and front-matter changes.
+    const pageCounts = new Map<string, number>();
+    for (const page of root.querySelectorAll<HTMLElement>(
+      ":scope > .page[data-story-id]",
+    )) {
+      const storyId = page.dataset.storyId!;
+      const index = pageCounts.get(storyId) ?? 0;
+      pageCounts.set(storyId, index + 1);
+      page.dataset.storyPage = String(index);
+      const story = stories.find((item) => item.story.id === storyId)!.story;
+      const override = story.pageBackgrounds?.[String(index)];
+      page.dataset.backgroundSource = override ? "page" : "story";
+      const design = override ?? story.background;
+      background(page, design, issue.renderAssets ?? [], mediaImage);
+      if (design?.mode === "image" && !design.image)
+        warnings.push(
+          "Background image is not selected for “" +
+            story.title +
+            "”. Select an image or choose another background before export.",
+        );
+    }
     const references = [
       issue.cover?.image,
       issue.cover?.logo,
       ...stories.flatMap(({ story }) => [
+        story.background?.mode === "image" ? story.background.image : undefined,
+        ...Object.values(story.pageBackgrounds ?? {}).flatMap((design) =>
+          design.mode === "image" && design.image ? [design.image] : [],
+        ),
         story.visual?.hero,
         story.visual?.thumbnail,
         ...story.media,

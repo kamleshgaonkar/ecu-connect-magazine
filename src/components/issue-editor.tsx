@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { Shell, Empty } from "./shell";
 import { CoverControls, StoryVisualControls } from "./visual-controls";
-import { Preview } from "./preview";
+import { Preview, type PreviewPageSelection } from "./preview";
+import { BackgroundDesign } from "./background-design";
 import { GridEditor } from "./grid-editor";
 import { toggleMagazineVisibility } from "../studio/visibility";
 import { StoriesPanel } from "./stories-panel";
@@ -65,6 +66,14 @@ function words(story: Story) {
 }
 export function IssueEditor({ issueId }: { issueId: string }) {
   const router = useRouter();
+  const [previewPage, setPreviewPage] = useState<PreviewPageSelection>(null);
+  function selectPreviewPage(next: PreviewPageSelection) {
+    setPreviewPage((previous) =>
+      previous?.storyId === next?.storyId && previous?.index === next?.index
+        ? previous
+        : next,
+    );
+  }
   const [issue, setIssue] = useState<Issue | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
@@ -368,7 +377,13 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                   }}
                 />
               }
-              preview={<Preview issue={issue} activeStoryId={activeStory} />}
+              preview={
+                <Preview
+                  issue={issue}
+                  activeStoryId={activeStory}
+                  onPageSelect={selectPreviewPage}
+                />
+              }
             >
               <div className="editor-detail">
                 {view.kind === "details" ? (
@@ -438,6 +453,11 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                   <StoryEditor
                     key={story.id}
                     story={story}
+                    pageIndex={
+                      previewPage?.storyId === story.id
+                        ? previewPage.index
+                        : null
+                    }
                     sectionName={section.name}
                     index={storyIndex}
                     count={section.stories.length}
@@ -617,6 +637,7 @@ export function IssueEditor({ issueId }: { issueId: string }) {
 }
 function StoryEditor({
   story,
+  pageIndex,
   sectionName,
   index,
   count,
@@ -626,6 +647,7 @@ function StoryEditor({
   onBack,
 }: {
   story: Story;
+  pageIndex: number | null;
   sectionName: string;
   index: number;
   count: number;
@@ -706,6 +728,11 @@ function StoryEditor({
           />
         </label>
       </div>
+      <BackgroundDesign
+        story={story}
+        pageIndex={pageIndex}
+        onChange={onChange}
+      />
       <GridEditor story={story} onChange={onChange} structureOnly />
       {/* Keep advanced editors mounted but hidden for later restoration. */}
       <div hidden>
