@@ -21,6 +21,7 @@ async function open(page: Page, issue: Issue) {
 }
 async function add(page: Page, type: string) {
   const outline = page.getByRole("navigation", { name: "Magazine structure" });
+  await outline.locator(".section-create-menu summary").click();
   await outline.getByLabel("New section type").selectOption(type);
   await outline
     .getByRole("button", { name: "Add section", exact: true })

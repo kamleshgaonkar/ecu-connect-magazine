@@ -168,6 +168,68 @@ export function previewController(renderId: string) {
     if (fullscreen) thumbnails();
     if (strip) strip.style.display = fullscreen ? "flex" : "none";
   }
+  // Read-only bridge for Column 1: clone only requested opening pages after
+  // final pagination. No navigation, selection or renderer changes occur here.
+  window.addEventListener("message", (event) => {
+    if (
+      event.source !== parent ||
+      event.data?.type !== "stories-thumbnail-request" ||
+      !window.__magazineReady ||
+      !Array.isArray(event.data.ids)
+    )
+      return;
+    const requested = new Set(
+      event.data.ids.filter((id: unknown) => typeof id === "string"),
+    );
+    const stories: Record<
+      string,
+      { html: string; first: number; last: number }
+    > = {};
+    const result = window.__magazineResult;
+    for (const page of pages()) {
+      const id = page.dataset.storyId;
+      if (!id || !requested.has(id) || stories[id] || !result?.storyPages[id])
+        continue;
+      const clone = page.cloneNode(true) as HTMLElement;
+      clone
+        .querySelectorAll("script,iframe,object,embed")
+        .forEach((node) => node.remove());
+      clone
+        .querySelectorAll("[id]")
+        .forEach((node) => node.removeAttribute("id"));
+      clone.removeAttribute("id");
+      // Thumbnail copies are inert artwork, not navigation targets. Retain the
+      // authoritative story/page identities only on the actual preview pages.
+      for (const attribute of [
+        "data-story-id",
+        "data-story-page",
+        "data-section-id",
+        "data-physical-page",
+        "data-editor-selected",
+      ])
+        clone.removeAttribute(attribute);
+      clone.style.outline = "none";
+      clone.style.setProperty("zoom", "1");
+      const first = result.storyPages[id].folio;
+      stories[id] = {
+        html: clone.outerHTML,
+        first,
+        last: first + (result.storyPageCounts[id] ?? 1) - 1,
+      };
+    }
+    parent.postMessage(
+      {
+        type: "stories-thumbnail-result",
+        renderId,
+        requestId: event.data.requestId,
+        css: Array.from(document.head.querySelectorAll("style"))
+          .map((node) => node.textContent)
+          .join("\n"),
+        stories,
+      },
+      "*",
+    );
+  });
   window.addEventListener("message", (event) => {
     if (
       event.source !== parent ||

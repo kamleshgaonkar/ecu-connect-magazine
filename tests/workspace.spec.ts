@@ -101,12 +101,10 @@ test("drag sections and stories, move between sections, save and update contents
   );
   await expect(nav.locator(".outline-section").first()).toContainText(b.name);
   await nav
-    .getByRole("button", { name: b.name + " 1 story", exact: true })
+    .getByRole("button", { name: b.name + " (1)", exact: true })
     .click();
   const story = a.stories[0];
-  await nav
-    .getByRole("button", { name: a.name + " 1 story", exact: true })
-    .click();
+  await nav.getByRole("button", { name: a.name + " (1)", exact: true }).click();
   await dragStoryItem(
     page,
     nav.getByRole("button", {

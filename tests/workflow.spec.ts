@@ -21,6 +21,7 @@ test("create, structure, persist, preview and export an issue", async ({
   await expect(
     page.getByRole("heading", { name: "An editorial journey" }),
   ).toBeVisible();
+  await page.locator(".section-create-menu summary").click();
   await page.getByRole("button", { name: "Add section", exact: true }).click();
   await page.getByRole("button", { name: "Add story", exact: true }).click();
   await page

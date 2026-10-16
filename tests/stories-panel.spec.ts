@@ -251,7 +251,7 @@ test("handle-only dragging stays vertically anchored, preserves expansion and su
   );
   await expect(
     nav.locator(`[data-section-id="${a.id}"] .outline-story`).first(),
-  ).toHaveText(a.stories[1].title);
+  ).toHaveAttribute("aria-label", a.stories[1].title);
   await dragStoryItem(
     page,
     nav.getByRole("button", {
@@ -263,7 +263,7 @@ test("handle-only dragging stays vertically anchored, preserves expansion and su
   );
   await expect(
     nav.locator(`[data-section-id="${b.id}"] .outline-story`).first(),
-  ).toHaveText(a.stories[0].title);
+  ).toHaveAttribute("aria-label", a.stories[0].title);
   await expect(
     nav.getByRole("button", { name: "Collapse " + a.name, exact: true }),
   ).toHaveAttribute("aria-expanded", "true");

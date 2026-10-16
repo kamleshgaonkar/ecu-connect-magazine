@@ -6,13 +6,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  FileText,
-  Globe,
-  Bell,
-  Star,
-  Building2,
-  Users,
-  Calendar,
+  Trash2,
   GripVertical,
   Plus,
   Eye,
@@ -26,17 +20,8 @@ import {
 } from "../domain/issue";
 import type { StoryDrag } from "../studio/reorder";
 import { useStoriesDrag } from "./use-stories-drag";
+import { StoryThumbnail, useStoryThumbnails } from "./story-thumbnails";
 import "./stories-panel.css";
-const icons = [BookOpen, Globe, Bell, Star, Building2, Users, Calendar];
-const colors = [
-  "#2563a6",
-  "#148b8a",
-  "#b77917",
-  "#8052ad",
-  "#c66d28",
-  "#c14f89",
-  "#328454",
-];
 export function StoriesPanel({
   issue,
   sectionId,
@@ -51,12 +36,14 @@ export function StoriesPanel({
   onReorder,
   onMoveSection,
   onVisibility,
+  onRemoveSection,
 }: {
   issue: Issue;
   sectionId?: string;
   storyId?: string;
   details: boolean;
   previewClick?: number;
+  onRemoveSection: (section: Section) => void;
   onDetails: () => void;
   onSection: (s: Section) => void;
   onStory: (s: Section, story: Story) => void;
@@ -89,6 +76,11 @@ export function StoriesPanel({
   }
   const isExpanded = (id: string) =>
     !closed.has(id) && (opened.has(id) || sectionId === id);
+  const thumbnails = useStoryThumbnails(
+    issue.sections.flatMap((s) =>
+      isExpanded(s.id) ? s.stories.map((story) => story.id) : [],
+    ),
+  );
   // Freeze current expansion on pickup; moving a selected story must not open or close sections.
   const { dragging, indicator, ghost, announcement, handle } = useStoriesDrag(
     root,
@@ -116,7 +108,35 @@ export function StoriesPanel({
     >
       <div className="stories-title">
         <h2>Stories</h2>
-        <span>{issue.sections.reduce((n, s) => n + s.stories.length, 0)}</span>
+        <details className="section-create-menu">
+          <summary title="Add section">
+            <Plus size={14} /> Section
+          </summary>
+          <div className="add-section">
+            <label>
+              New section type
+              <select
+                value={sectionType}
+                onChange={(e) => setSectionType(e.target.value)}
+              >
+                {sectionNames.map((n) => (
+                  <option key={n}>{n}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              className="outline-add"
+              disabled={issue.sections.length >= 30}
+              onClick={(event) => {
+                onAddSection(sectionType);
+                event.currentTarget.closest("details")?.removeAttribute("open");
+              }}
+            >
+              <Plus size={14} />
+              Add section
+            </button>
+          </div>
+        </details>
       </div>
       <button
         className="outline-item outline-details"
@@ -134,12 +154,7 @@ export function StoriesPanel({
       </p>
       <ol className="outline-sections">
         {issue.sections.map((s, index) => {
-          const expanded = isExpanded(s.id),
-            type = sectionNames.indexOf(
-              s.name as (typeof sectionNames)[number],
-            ),
-            Icon = type >= 0 ? icons[type] : FileText,
-            color = colors[type >= 0 ? type : 0];
+          const expanded = isExpanded(s.id);
           const sectionSource: StoryDrag = { kind: "section", id: s.id };
           return (
             <li
@@ -203,14 +218,19 @@ export function StoriesPanel({
                     onSection(s);
                   }}
                 >
-                  <Icon size={20} style={{ color }} aria-hidden="true" />
                   <span>
                     {s.name || "Untitled section"}
-                    <small>
-                      {s.stories.length}{" "}
-                      {s.stories.length === 1 ? "story" : "stories"}
-                    </small>
+                    <small> ({s.stories.length})</small>
                   </span>
+                </button>
+                <button
+                  className="icon-button section-add-story"
+                  aria-label={"Add story to " + s.name}
+                  title="Add story"
+                  disabled={s.stories.length >= 50}
+                  onClick={() => onAddStory(s)}
+                >
+                  <Plus size={15} />
                 </button>
                 <button
                   className="item-visibility icon-button"
@@ -224,6 +244,14 @@ export function StoriesPanel({
                   onClick={() => onVisibility(s.id)}
                 >
                   {s.enabled ? <Eye size={16} /> : <EyeOff size={16} />}
+                </button>
+                <button
+                  className="icon-button section-delete"
+                  aria-label={"Delete section: " + s.name}
+                  title="Delete section"
+                  onClick={() => onRemoveSection(s)}
+                >
+                  <Trash2 size={14} />
                 </button>
                 <div className="outline-order">
                   <button
@@ -284,12 +312,31 @@ export function StoriesPanel({
                           </button>
                           <button
                             className="outline-item outline-story"
+                            aria-label={item.title || "Untitled story"}
                             aria-current={
                               storyId === item.id ? "true" : undefined
                             }
                             onClick={() => onStory(s, item)}
                           >
-                            <span>{item.title || "Untitled story"}</span>
+                            <StoryThumbnail
+                              snapshot={thumbnails.stories[item.id]}
+                              sheet={thumbnails.sheet}
+                            />
+                            <span className="story-row-copy">
+                              <span className="story-row-title">
+                                {item.title || "Untitled story"}
+                              </span>
+                              <small>
+                                {!s.enabled || !item.enabled
+                                  ? "Hidden from magazine"
+                                  : thumbnails.stories[item.id]
+                                    ? thumbnails.stories[item.id].first ===
+                                      thumbnails.stories[item.id].last
+                                      ? `Page ${thumbnails.stories[item.id].first}`
+                                      : `Pages ${thumbnails.stories[item.id].first}–${thumbnails.stories[item.id].last}`
+                                    : "Updating pages…"}
+                              </small>
+                            </span>
                           </button>
                           <button
                             className="item-visibility icon-button"
@@ -334,27 +381,7 @@ export function StoriesPanel({
           );
         })}
       </ol>
-      <div className="add-section">
-        <label>
-          New section type
-          <select
-            value={sectionType}
-            onChange={(e) => setSectionType(e.target.value)}
-          >
-            {sectionNames.map((n) => (
-              <option key={n}>{n}</option>
-            ))}
-          </select>
-        </label>
-        <button
-          className="button secondary"
-          disabled={issue.sections.length >= 30}
-          onClick={() => onAddSection(sectionType)}
-        >
-          <Plus size={16} />
-          Add section
-        </button>
-      </div>
+      <style>{thumbnails.fonts}</style>
       <p role="status" aria-live="polite" className="sr-only">
         {announcement}
       </p>

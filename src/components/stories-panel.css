@@ -113,3 +113,296 @@
     pointer-events: auto;
   }
 }
+
+/* Approved neutral Column 1. Magazine colours remain inside actual thumbnails. */
+.editor-shell .stories-panel {
+  color: #30343a;
+  background: #fff;
+  padding: 18px 10px;
+  min-width: 0;
+}
+.editor-shell .stories-panel button,
+.editor-shell .stories-panel summary,
+.editor-shell .stories-panel select {
+  color: #42464d;
+}
+.editor-shell .stories-panel button:focus-visible,
+.editor-shell .stories-panel summary:focus-visible,
+.editor-shell .stories-panel select:focus-visible {
+  outline: 2px solid #757b84;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.editor-shell .stories-panel svg {
+  color: #858b94;
+  flex: none;
+}
+.editor-shell .stories-panel .stories-title {
+  position: relative;
+  padding: 0 6px 14px;
+  gap: 8px;
+}
+.editor-shell .stories-panel .stories-title h2 {
+  font-size: 17px;
+  letter-spacing: -0.2px;
+  color: #292d33;
+  margin: 0;
+}
+.editor-shell .stories-panel .section-create-menu {
+  position: static;
+  flex: none;
+  font-size: 12px;
+}
+.editor-shell .stories-panel .section-create-menu summary {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  list-style: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+}
+.editor-shell
+  .stories-panel
+  .section-create-menu
+  summary::-webkit-details-marker {
+  display: none;
+}
+.editor-shell .stories-panel .add-section {
+  position: absolute;
+  z-index: 8;
+  right: 0;
+  top: 32px;
+  width: 230px;
+  max-width: 100%;
+  background: white;
+  border: 1px solid #eceef1;
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 4px 14px #0000000d;
+  margin: 0;
+}
+.editor-shell .stories-panel .add-section label {
+  font-size: 11px;
+  display: grid;
+  gap: 6px;
+}
+.editor-shell .stories-panel .add-section select {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 32px;
+  padding: 5px;
+  font-size: 11px;
+  border: 1px solid #eceef1;
+  background: #fff;
+}
+.editor-shell .stories-panel .outline-details {
+  padding: 9px 6px 16px;
+  margin: 0 0 4px;
+  border-color: #eceef1;
+  font-size: 12px;
+  background: transparent;
+  box-shadow: none;
+  color: #42464d;
+}
+.editor-shell .stories-panel .outline-details small {
+  color: #858b94;
+  font-size: 10px;
+}
+.editor-shell .stories-panel .outline-sections {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.editor-shell .stories-panel .outline-sections > li {
+  border-top: 1px solid #eceef1;
+  margin-top: 12px;
+  padding-top: 5px;
+  min-width: 0;
+}
+.editor-shell .stories-panel .outline-sections > li:first-child {
+  border-top: 0;
+  margin-top: 0;
+}
+.editor-shell .stories-panel .outline-row {
+  position: relative;
+  padding: 7px 0;
+  gap: 0;
+  border-radius: 4px;
+  flex-wrap: nowrap;
+}
+.editor-shell .stories-panel .outline-section {
+  padding: 5px 3px;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 600;
+  box-shadow: none;
+  background: transparent;
+  gap: 0;
+  display: block;
+  text-align: left;
+}
+.editor-shell .stories-panel .outline-section span {
+  display: inline;
+}
+.editor-shell .stories-panel .outline-section small {
+  display: inline;
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+  color: #858b94;
+}
+.editor-shell .stories-panel .section-toggle {
+  width: 20px;
+  min-width: 20px;
+  padding: 2px;
+}
+.editor-shell .stories-panel .icon-button {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  min-height: 26px;
+}
+.editor-shell
+  .stories-panel
+  .outline-row
+  > .icon-button:not(.stories-drag-handle):not(.section-toggle) {
+  width: 23px;
+  min-width: 23px;
+  padding: 3px;
+  opacity: 1;
+  pointer-events: auto;
+}
+.editor-shell .stories-panel .icon-button:hover,
+.editor-shell .stories-panel summary:hover {
+  background: #f1f3f6;
+}
+.editor-shell .stories-panel .stories-drag-handle {
+  width: 14px;
+  min-width: 14px;
+  padding: 0;
+  opacity: 0.5;
+}
+.editor-shell .stories-panel .stories-drag-handle:hover,
+.editor-shell .stories-panel .stories-drag-handle:focus-visible {
+  opacity: 1;
+}
+.editor-shell .stories-panel .outline-order {
+  width: 16px;
+  flex: none;
+  opacity: 0;
+}
+.editor-shell .stories-panel .outline-order .icon-button {
+  width: 16px;
+  min-width: 16px;
+  min-height: 15px;
+  height: 15px;
+  padding: 0;
+}
+.editor-shell .stories-panel .outline-row:hover .outline-order,
+.editor-shell .stories-panel .outline-row:focus-within .outline-order {
+  opacity: 1;
+}
+.editor-shell .stories-panel .outline-stories {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  border: 0;
+}
+.editor-shell .stories-panel .outline-stories > li {
+  padding: 0;
+  border: 0;
+  margin: 3px 0;
+}
+.editor-shell .stories-panel .story-line {
+  padding: 7px 3px;
+  border-radius: 6px;
+  gap: 3px;
+  box-shadow: none;
+}
+.editor-shell .stories-panel .story-line:hover {
+  background: #fafbfc;
+}
+.editor-shell .stories-panel .story-line[data-selected="true"] {
+  background: #f1f3f6;
+  box-shadow: none;
+}
+.editor-shell .stories-panel .outline-story,
+.editor-shell .stories-panel .outline-story[aria-current="true"] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  box-shadow: none;
+  background: transparent;
+  color: #42464d;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  font-weight: 400;
+}
+.editor-shell
+  .stories-panel
+  .outline-story[aria-current="true"]
+  .story-row-title {
+  font-weight: 600;
+  color: #292d33;
+}
+.editor-shell .stories-panel .story-row-copy {
+  display: block;
+  min-width: 0;
+  flex: 1;
+}
+.editor-shell .stories-panel .story-row-title {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.editor-shell .stories-panel .story-row-copy small {
+  display: block;
+  font-size: 10px;
+  color: #858b94;
+  margin-top: 5px;
+  font-weight: 400;
+}
+.editor-shell .stories-panel .story-opening-thumbnail {
+  display: block;
+  width: 65px;
+  height: 91.93px;
+  flex: 0 0 65px;
+  overflow: hidden;
+  contain: strict;
+  background: #fff;
+  border: 1px solid #eceef1;
+  pointer-events: none;
+}
+.editor-shell .stories-panel .story-line > .item-visibility {
+  width: 23px;
+  min-width: 23px;
+  padding: 3px;
+}
+.editor-shell .stories-panel .outline-add {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 9px 7px;
+  color: #727983;
+  width: auto;
+}
+.editor-shell .stories-panel .story-end-drop {
+  padding-left: 16px !important;
+}
+.editor-shell .stories-panel .outline-add:hover {
+  color: #30343a;
+  background: #f7f8fa;
+}
+@media (hover: none) {
+  .editor-shell .stories-panel .outline-order {
+    opacity: 1;
+  }
+}

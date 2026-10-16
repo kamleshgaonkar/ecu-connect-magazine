@@ -326,6 +326,27 @@ export function IssueEditor({ issueId }: { issueId: string }) {
                   storyId={story?.id}
                   details={view.kind === "details"}
                   previewClick={previewClick}
+                  onRemoveSection={(target) => {
+                    if (
+                      !window.confirm(
+                        `Remove “${target.name}” and all its stories?`,
+                      )
+                    )
+                      return;
+                    const rest = issue.sections.filter(
+                      (s) => s.id !== target.id,
+                    );
+                    update({ ...issue, sections: rest });
+                    if ("sectionId" in view && view.sectionId === target.id) {
+                      setView(
+                        rest[0]
+                          ? { kind: "section", sectionId: rest[0].id }
+                          : { kind: "details" },
+                      );
+                      setActiveStory(undefined);
+                      setPreviewPage(null);
+                    }
+                  }}
                   onDetails={() => setView({ kind: "details" })}
                   onSection={openSection}
                   onStory={openStory}
